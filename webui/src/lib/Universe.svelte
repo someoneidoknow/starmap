@@ -577,6 +577,69 @@
 				return;
 			}
 			for (const star of universe_data.stars) {
+				if (star.type === StarType.RoguePlanet) { // rogue planet
+					if (scale > planetShowAt) continue;
+					const planet = universe_data.planets.find(p => p.coordinate.x === star.coordinate.x && p.coordinate.y === star.coordinate.y && p.coordinate.z === 0 && p.coordinate.w === 0);
+					if (!planet) continue;
+					const sx = planet.coordinate.x + 0.5;
+					const sy = planet.coordinate.y + 0.5;
+					if (sx < visMinX || sx > visMaxX || sy < visMinY || sy > visMaxY) continue;
+					const cx = sx * DETAIL;
+					const cy = sy * DETAIL;
+					const diameter = starRadius * DETAIL * sFactor * 2;
+					const visible = search_results === null ? true : search_results.universe_map.has(JSON.stringify(planet.coordinate));
+					if (planet.atmosphere) {
+						let glow: PIXI.Sprite;
+						if (i < children.length) glow = children[i]; else { glow = new PIXI.Sprite(); glow.anchor.set(0.5); gStars.addChild(glow); }
+						glow.visible = visible;
+						glow.texture = atmosphereTexture;
+						glow.position.set(cx, cy);
+						glow.width = diameter * 1.6;
+						glow.height = diameter * 1.6;
+						glow.alpha = 0.6;
+						glow.tint = (planet.primary_color.r << 16) | (planet.primary_color.g << 8) | planet.primary_color.b;
+						i++;
+					}
+					let baseSprite: PIXI.Sprite;
+					if (i < children.length) baseSprite = children[i]; else { baseSprite = new PIXI.Sprite(); baseSprite.anchor.set(0.5); gStars.addChild(baseSprite); }
+					baseSprite.visible = visible;
+					const baseTexName = PlanetType[planet.type] + '1';
+					const baseTex = planetTextures[baseTexName] ?? starTexture;
+					baseSprite.texture = baseTex;
+					baseSprite.tint = (planet.primary_color.r << 16) | (planet.primary_color.g << 8) | planet.primary_color.b;
+					baseSprite.alpha = 1;
+					baseSprite.position.set(cx, cy);
+					baseSprite.width = diameter;
+					baseSprite.height = diameter;
+					i++;
+					if (planet.secondary_color) {
+						let overlay: PIXI.Sprite;
+						if (i < children.length) overlay = children[i]; else { overlay = new PIXI.Sprite(); overlay.anchor.set(0.5); gStars.addChild(overlay); }
+						overlay.visible = visible;
+						const overlayTexName = PlanetType[planet.type] + '2';
+						const overlayTex = planetTextures[overlayTexName] ?? planetTextures['Barren2'];
+						overlay.texture = overlayTex;
+						overlay.tint = (planet.secondary_color.r << 16) | (planet.secondary_color.g << 8) | planet.secondary_color.b;
+						overlay.alpha = 1;
+						overlay.position.set(cx, cy);
+						overlay.width = diameter;
+						overlay.height = diameter;
+						i++;
+					}
+					if (planet.ring) {
+						let ring: PIXI.Sprite;
+						if (i < children.length) ring = children[i]; else { ring = new PIXI.Sprite(); ring.anchor.set(0.5); gStars.addChild(ring); }
+						ring.visible = visible;
+						ring.texture = ringTextures[RingType[planet.ring.type]];
+						ring.tint = 0xffffff;
+						ring.alpha = 1;
+						ring.position.set(cx, cy);
+						ring.width = diameter;
+						ring.height = diameter;
+						i++;
+					}
+					continue;
+				}
 				let sx = star.coordinate.x + 0.5;
 				let sy = star.coordinate.y + 0.5;
 				sx += (star.coordinate.z ?? 0) / SUBCELLS;
