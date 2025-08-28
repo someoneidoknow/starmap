@@ -48,6 +48,9 @@
 		if (!collapsible) return;
 		if (!collapsed) {
 			savedHeight = height ?? panelEl?.offsetHeight ?? 0;
+			if (width === undefined && panelEl) {
+				width = panelEl.offsetWidth;
+			}
 		} else {
 			if (savedHeight) height = savedHeight;
 		}
