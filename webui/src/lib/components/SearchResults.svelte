@@ -255,7 +255,9 @@
 				on:click={() => focusStar(item)}
 				on:keydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && focusStar(item)}
 			>
-				<PlanetIcon info={starToInfo(item)} size={32} />
+				{#key JSON.stringify(starToInfo(item))}
+					<PlanetIcon info={starToInfo(item)} size={32} />
+				{/key}
 				<div class="name">{StarType[item.type] ?? item.type}</div>
 				<div class="coord">{fmtCoord(item.coordinate)}</div>
 				<div class="size">{item.size}</div>
