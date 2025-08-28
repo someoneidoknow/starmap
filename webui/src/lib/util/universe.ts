@@ -1,6 +1,5 @@
 import { decode } from '@msgpack/msgpack';
-// @ts-ignore
-import { ZSTDDecoder } from 'zstddec';
+import { loadUniverse as loadUniverseRaw } from './assets';
 import {
 	type UniverseData,
 	type Coordinate,
@@ -23,28 +22,7 @@ import {
 	string_to_star_type
 } from '$lib/util/parse';
 
-let universeData: any = null;
-
-async function loadUniverseData(): Promise<any> {
-	if (universeData) return universeData;
-
-	try {
-		const response = await fetch('/assets/Universe.msgpack.zst');
-		const compressedData = await response.arrayBuffer();
-		const uint8Array = new Uint8Array(compressedData);
-
-		const decoder = new ZSTDDecoder();
-		await decoder.init();
-
-		const decompressed = decoder.decode(uint8Array, 16384*1024); // 16 MB
-
-		universeData = decode(decompressed);
-		return universeData;
-	} catch (error) {
-		console.error('Failed to load universe data:', error);
-		throw error;
-	}
-}
+async function loadUniverseData(): Promise<any> { return loadUniverseRaw(); }
 
 function rgbToHex([r, g, b]: [number, number, number]): number {
 	return (r << 16) + (g << 8) + b;

@@ -7,23 +7,14 @@
 	import SearchResults from '$lib/components/SearchResults.svelte';
 	import { onDestroy, onMount } from 'svelte';
 	import { parseUniverse } from '$lib/util/universe';
-	import { decode } from '@msgpack/msgpack';
 	import type { Coordinate, SearchResult, SolarSystem } from '$lib/util/types';
-	import { ZSTDDecoder } from 'zstddec';
+	import { loadUniverse } from '$lib/util/assets';
 	let universe_data: any = null;
 	let raw_data: any = null;
 
 	onMount(async () => {
 		try {
-			const response = await fetch('/assets/Universe.msgpack.zst');
-			const compressedData = new Uint8Array(await response.arrayBuffer());
-
-			const decoder = new ZSTDDecoder();
-			await decoder.init();
-		
-			const decompressed = decoder.decode(compressedData, 16384*1024); // 16 MB
-			raw_data = decode(decompressed);
-		
+			raw_data = await loadUniverse();
 			universe_data = await parseUniverse(raw_data);
 		} catch (error) {
 			console.error('Failed to load universe data:', error);

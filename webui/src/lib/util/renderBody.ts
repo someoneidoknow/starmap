@@ -1,5 +1,6 @@
 import type { BodyInfo } from './bodyWorker.ts';
 import type { AtlasData } from './types.ts';
+import { loadTextureAtlas } from './assets';
 import { browser } from '$app/environment';
 
 let workers: Worker[] = [];
@@ -46,30 +47,16 @@ async function loadAtlasTextures(): Promise<Map<string, ImageBitmap>> {
 
 	textureLoadingPromise = (async () => {
 		try {
-			const [atlasResponse, imageResponse] = await Promise.all([
-				fetch('/assets/textures.msgpack.zst'),
-				fetch('/assets/textures.png')
-			]);
-
-			const compressedData = new Uint8Array(await atlasResponse.arrayBuffer());
-			const decoder = new (await import('zstddec')).ZSTDDecoder();
-			await decoder.init();
-			const decompressed = decoder.decode(compressedData, 16384);
-			const atlasData = (await import('@msgpack/msgpack')).decode(decompressed) as AtlasData;
-
-			const imageBlob = await imageResponse.blob();
-			const atlasImage = await createImageBitmap(imageBlob);
-
+			const { atlasData, image } = await loadTextureAtlas();
 			textureMap = new Map();
 			for (const [textureName, frameData] of Object.entries(atlasData.frames)) {
 				const { x, y, w, h } = frameData.frame;
 				const canvas = new OffscreenCanvas(w, h);
 				const ctx = canvas.getContext('2d')!;
-				ctx.drawImage(atlasImage, x, y, w, h, 0, 0, w, h);
-				const texture = await createImageBitmap(canvas);
-				textureMap.set(textureName, texture);
+				ctx.drawImage(image, x, y, w, h, 0, 0, w, h);
+				const bmp = await createImageBitmap(canvas);
+				textureMap.set(textureName, bmp);
 			}
-
 			return textureMap;
 		} catch (error) {
 			textureLoadingPromise = null;

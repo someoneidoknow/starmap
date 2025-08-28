@@ -19,8 +19,7 @@
 		type AtlasData
 	} from '$lib/util/types';
 	import { dev } from '$app/environment';
-	import { decode } from '@msgpack/msgpack';
-	import { ZSTDDecoder } from 'zstddec';
+	import { loadTextureAtlas } from '$lib/util/assets';
 	import { getCookie, setCookie } from '$lib/util/cookie';
 
 	const SUBCELLS = 21;
@@ -256,39 +255,25 @@
 		ringTextures['Ice'] = placeholderTexture;
 		ringTextures['Stone'] = placeholderTexture;
 
-		// Load texture atlas
-		const atlasPromise = fetch('assets/textures.msgpack.zst')
-			.then(response => response.arrayBuffer())
-			.then(async (buffer) => {
-				const compressedData = new Uint8Array(buffer);
-				const decoder = new ZSTDDecoder();
-				await decoder.init();
-				const decompressed = decoder.decode(compressedData, 16384); // YOLO
-				return decode(decompressed) as AtlasData;
-			})
-			.then((atlasData) => {
-				return PIXI.Assets.load('assets/textures.png').then(atlasTexture => {
-					for (const textureName of [...allPlanetTextureNames, ...allStarTextureNames]) {
-						const frameKey = textureName.toLowerCase();
-						if (atlasData.frames[frameKey]) {
-							const frame = atlasData.frames[frameKey].frame;
-							const texture = new PIXI.Texture({
-								source: atlasTexture.source,
-								frame: new PIXI.Rectangle(frame.x, frame.y, frame.w, frame.h)
-							});
-							texture.baseTexture.scaleMode = 'nearest';
-
-							if (allPlanetTextureNames.includes(textureName)) {
-								planetTextures[textureName] = texture;
-								if (textureName === 'Icering') ringTextures['Ice'] = texture;
-								if (textureName === 'Stonering') ringTextures['Stone'] = texture;
-							} else {
-								starTextures[textureName] = texture;
-							}
+		const atlasPromise = loadTextureAtlas()
+			.then(({ atlasData, image }) => {
+				const atlasTexture = PIXI.Texture.from(image);
+				for (const textureName of [...allPlanetTextureNames, ...allStarTextureNames]) {
+					const frameKey = textureName.toLowerCase();
+					if (atlasData.frames[frameKey]) {
+						const frame = atlasData.frames[frameKey].frame;
+						const texture = new PIXI.Texture({ source: atlasTexture.source, frame: new PIXI.Rectangle(frame.x, frame.y, frame.w, frame.h) });
+						texture.baseTexture.scaleMode = 'nearest';
+						if (allPlanetTextureNames.includes(textureName)) {
+							planetTextures[textureName] = texture;
+							if (textureName === 'Icering') ringTextures['Ice'] = texture;
+							if (textureName === 'Stonering') ringTextures['Stone'] = texture;
+						} else {
+							starTextures[textureName] = texture;
 						}
 					}
-					should_rebuild = true;
-				});
+				}
+				should_rebuild = true;
 			})
 			.catch((err) => {
 				console.error('Error loading texture atlas:', err);
