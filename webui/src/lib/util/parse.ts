@@ -106,6 +106,9 @@ export function string_to_star_type(str: string): StarType | null {
 	} else if (str === 'AsteroidField') {
 		return StarType.AsteroidField;
 	}
+	else if (str === 'RoguePlanet') {
+		return StarType.RoguePlanet;
+	}
 
 	return null;
 }
@@ -126,6 +129,8 @@ export function star_type_to_star_color(type: StarType): RGBColor {
 			return { r: 255, g: 93, b: 0 };
 		case StarType.AsteroidField:
 			return { r: 136, g: 136, b: 136 };
+		case StarType.RoguePlanet:
+			return { r: 100, g: 100, b: 100 };
 		default:
 			const _exhaustive: never = type;
 			throw new Error(`Unhandled star type: ${type}`);

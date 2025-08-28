@@ -116,7 +116,8 @@ export enum StarType {
 	Blue,
 	Neutron,
 	BlackHole,
-	AsteroidField // maweslop code
+	AsteroidField, // maweslop code
+	RoguePlanet
 }
 
 export type Star = {

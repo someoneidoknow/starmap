@@ -221,7 +221,17 @@ export async function parseUniverse(rawData?: any): Promise<UniverseData> {
 	const universe_data: UniverseData = {
 		stars,
 		planets,
-		solar_systems: Array.from(systems.values())
+		solar_systems: Array.from(systems.values()).map(sys => {
+			if (sys.stars.length === 0) {
+				const rp = sys.planets.find(p => p.coordinate.z === 0 && p.coordinate.w === 0);
+				if (rp) {
+					const star = { coordinate: rp.coordinate, type: StarType.RoguePlanet, size: 0, color: { r: 100, g: 100, b: 100 } } as Star;
+					sys.stars.push(star);
+					stars.push(star);
+				}
+			}
+			return sys;
+		})
 	};
 
 	return universe_data;
