@@ -121,12 +121,34 @@
 	const starInfoCache = new WeakMap<Star, any>();
 	function starToInfo(s: Star) {
 		if (starInfoCache.has(s)) return starInfoCache.get(s);
-		const subtype = StarType[s.type];
-		const info: any = {
-			Type: 'Star',
-			SubType: subtype,
-			PrimaryColor: s.color ? [s.color.r, s.color.g, s.color.b] : undefined
-		};
+		let info: any;
+		if (s.type === StarType.RoguePlanet && search_results) {
+			let planet = null;
+			for (const sys of search_results.solar_systems) {
+				planet = sys.planets.find(p => p.coordinate.x === s.coordinate.x && p.coordinate.y === s.coordinate.y && p.coordinate.z === 0 && p.coordinate.w === 0);
+				if (planet) break;
+			}
+			if (planet) {
+				const subtype = PlanetType[planet.type];
+				info = {
+					Type: 'Planet',
+					SubType: subtype,
+					Name: planet.name,
+					Atmosphere: planet.atmosphere,
+					PrimaryColor: planet.primary_color ? [planet.primary_color.r, planet.primary_color.g, planet.primary_color.b] : undefined,
+					SecondaryColor: planet.secondary_color ? [planet.secondary_color.r, planet.secondary_color.g, planet.secondary_color.b] : undefined,
+					Rings: planet.ring ? { Type: planet.ring.type === 0 ? 'Ice' : 'Stone' } : undefined
+				};
+			}
+		}
+		if (!info) {
+			const subtype = StarType[s.type];
+			info = {
+				Type: 'Star',
+				SubType: subtype,
+				PrimaryColor: s.color ? [s.color.r, s.color.g, s.color.b] : undefined
+			};
+		}
 		starInfoCache.set(s, info);
 		return info;
 	}
