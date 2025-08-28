@@ -1,15 +1,6 @@
 export type BodyInfo = Record<string, any>;
 
-const imageCache = new Map<string, ImageBitmap>();
-
-async function loadImage(src: string): Promise<ImageBitmap> {
-	if (imageCache.has(src)) return imageCache.get(src)!;
-	const resp = await fetch(src);
-	const blob = await resp.blob();
-	const bmp = await createImageBitmap(blob);
-	imageCache.set(src, bmp);
-	return bmp;
-}
+const textureMap = new Map<string, ImageBitmap>();
 
 function tintImage(img: ImageBitmap, color: [number, number, number]): OffscreenCanvas {
 	const c = new OffscreenCanvas(img.width, img.height);
@@ -44,26 +35,37 @@ async function renderBodyOffscreen(canvas: OffscreenCanvas, info: BodyInfo) {
 		if (isStar) {
 			const sub = info.SubType || info.Type;
 			const texName = sub.toLowerCase();
-			const src = `/assets/startexture/${texName}.png`;
-			const img = await loadImage(src);
-			const size = Math.min(canvas.width, canvas.height);
-			ctx.drawImage(img, 0, 0, size, size);
+			const img = textureMap.get(texName);
+			if (img) {
+				const size = Math.min(canvas.width, canvas.height);
+				ctx.drawImage(img, 0, 0, size, size);
+			}
 			return;
 		}
 
 		if (info.Type === 'Planet') {
 			const subtype: string = info.SubType;
-			let baseSrc: string;
-			let overlaySrc: string | null = null;
+			let baseTextureName: string;
+			let overlayTextureName: string | null = null;
+			let ringTextureName: string | null = null;
+
 			if (subtype === 'EarthLike') {
-				baseSrc = '/assets/planettexture/earthlike.png';
+				baseTextureName = 'earthlike';
 			} else if (subtype === 'RobotFactory' || subtype === 'RobotDepot') {
 				return;
 			} else {
-				baseSrc = `/assets/planettexture/${subtype.toLowerCase()}1.png`;
-				overlaySrc = `/assets/planettexture/${subtype.toLowerCase()}2.png`;
+				baseTextureName = `${subtype.toLowerCase()}1`;
+				overlayTextureName = `${subtype.toLowerCase()}2`;
 			}
-			const baseImg = await loadImage(baseSrc);
+
+			if (info.Rings && info.Rings.Type) {
+				const ringType = String(info.Rings.Type).toLowerCase();
+				ringTextureName = `${ringType}ring`;
+			}
+
+			const baseImg = textureMap.get(baseTextureName);
+			if (!baseImg) return;
+
 			let baseCanvas: OffscreenCanvas;
 			if (subtype === 'EarthLike') {
 				baseCanvas = new OffscreenCanvas(baseImg.width, baseImg.height);
@@ -76,30 +78,38 @@ async function renderBodyOffscreen(canvas: OffscreenCanvas, info: BodyInfo) {
 			}
 			const size = Math.min(canvas.width, canvas.height);
 			ctx.drawImage(baseCanvas, 0, 0, size, size);
-			if (overlaySrc && Array.isArray(info.SecondaryColor)) {
-				try {
-					const overlayImg = await loadImage(overlaySrc);
-					const overlayCanvas = tintImage(
-						overlayImg,
-						info.SecondaryColor as [number, number, number]
-					);
+
+			if (overlayTextureName && Array.isArray(info.SecondaryColor)) {
+				const overlayImg = textureMap.get(overlayTextureName);
+				if (overlayImg) {
+					const overlayCanvas = tintImage(overlayImg, info.SecondaryColor as [number, number, number]);
 					ctx.drawImage(overlayCanvas, 0, 0, size, size);
-				} catch {}
+				}
 			}
-			if (info.Rings && info.Rings.Type) {
-				const ringType = String(info.Rings.Type).toLowerCase();
-				const ringSrc = `/assets/planettexture/${ringType}ring.png`;
-				try {
-					const ringImg = await loadImage(ringSrc);
+
+			if (ringTextureName) {
+				const ringImg = textureMap.get(ringTextureName);
+				if (ringImg) {
 					ctx.drawImage(ringImg, 0, 0, size, size);
-				} catch {}
+				}
 			}
 		}
 	} catch {}
 }
 
 onmessage = async (e) => {
-	const { canvas, info } = e.data;
+	const data = e.data;
+
+	if (data.type === 'init') {
+		const { textures } = data;
+		for (const [name, texture] of Object.entries(textures)) {
+			textureMap.set(name, texture as ImageBitmap);
+		}
+		postMessage({ initialized: true });
+		return;
+	}
+
+	const { canvas, info } = data;
 	await renderBodyOffscreen(canvas, info);
 	postMessage({ done: true });
 };

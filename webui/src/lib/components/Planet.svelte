@@ -5,7 +5,7 @@
 	import { renderBody } from '$lib/util/renderBody';
 
 	export let info: Record<string, any>;
-	export let size = 48;
+	export let size = 24;
 
 	let iconCanvas: HTMLCanvasElement | null = null;
 	let glow = false;
