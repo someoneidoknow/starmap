@@ -21,7 +21,7 @@
 			const decoder = new ZSTDDecoder();
 			await decoder.init();
 		
-			const decompressed = decoder.decode(compressedData);
+			const decompressed = decoder.decode(compressedData, 16384*1024); // 16 MB
 			raw_data = decode(decompressed);
 		
 			universe_data = await parseUniverse(raw_data);

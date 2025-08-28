@@ -35,8 +35,8 @@ async function loadUniverseData(): Promise<any> {
 
 		const decoder = new ZSTDDecoder();
 		await decoder.init();
-		
-		const decompressed = decoder.decode(uint8Array);
+
+		const decompressed = decoder.decode(uint8Array, 16384*1024); // 16 MB
 
 		universeData = decode(decompressed);
 		return universeData;

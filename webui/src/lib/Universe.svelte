@@ -263,7 +263,7 @@
 				const compressedData = new Uint8Array(buffer);
 				const decoder = new ZSTDDecoder();
 				await decoder.init();
-				const decompressed = decoder.decode(compressedData);
+				const decompressed = decoder.decode(compressedData, 16384); // YOLO
 				return decode(decompressed) as AtlasData;
 			})
 			.then((atlasData) => {
@@ -290,7 +290,8 @@
 					should_rebuild = true;
 				});
 			})
-			.catch(() => {
+			.catch((err) => {
+				console.error('Error loading texture atlas:', err);
 			});
 		const backgroundPromise = PIXI.Assets.load('assets/background.avif')
 			.then((tex) => {
