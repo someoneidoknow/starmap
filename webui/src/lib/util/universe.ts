@@ -1,6 +1,6 @@
 import { decode } from '@msgpack/msgpack';
 // @ts-ignore
-import zstdCodec from 'zstd-codec';
+import { ZSTDDecoder } from 'zstddec';
 import {
 	type UniverseData,
 	type Coordinate,
@@ -33,17 +33,10 @@ async function loadUniverseData(): Promise<any> {
 		const compressedData = await response.arrayBuffer();
 		const uint8Array = new Uint8Array(compressedData);
 
-		const decompressed = await new Promise<Uint8Array>((resolve, reject) => {
-			(zstdCodec as any).ZstdCodec.run((zstd: any) => {
-				try {
-					const simple = new zstd.Simple();
-					const result = simple.decompress(uint8Array);
-					resolve(result);
-				} catch (error) {
-					reject(error);
-				}
-			});
-		});
+		const decoder = new ZSTDDecoder();
+		await decoder.init();
+		
+		const decompressed = decoder.decode(uint8Array);
 
 		universeData = decode(decompressed);
 		return universeData;

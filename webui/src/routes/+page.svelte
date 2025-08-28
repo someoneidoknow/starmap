@@ -9,32 +9,21 @@
 	import { parseUniverse } from '$lib/util/universe';
 	import { decode } from '@msgpack/msgpack';
 	import type { Coordinate, SearchResult, SolarSystem } from '$lib/util/types';
-
+	import { ZSTDDecoder } from 'zstddec';
 	let universe_data: any = null;
 	let raw_data: any = null;
 
 	onMount(async () => {
 		try {
 			const response = await fetch('/assets/Universe.msgpack.zst');
-			const compressedData = await response.arrayBuffer();
-			const uint8Array = new Uint8Array(compressedData);
+			const compressedData = new Uint8Array(await response.arrayBuffer());
 
-			raw_data = await new Promise((resolve, reject) => {
-				// @ts-ignore
-				import('zstd-codec').then((zstdCodec) => {
-					zstdCodec.default.ZstdCodec.run((zstd: any) => {
-						try {
-							const simple = new zstd.Simple();
-							const decompressed = simple.decompress(uint8Array);
-							const data = decode(decompressed);
-							resolve(data);
-						} catch (error) {
-							reject(error);
-						}
-					});
-				});
-			});
-
+			const decoder = new ZSTDDecoder();
+			await decoder.init();
+		
+			const decompressed = decoder.decode(compressedData);
+			raw_data = decode(decompressed);
+		
 			universe_data = await parseUniverse(raw_data);
 		} catch (error) {
 			console.error('Failed to load universe data:', error);
