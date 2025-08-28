@@ -235,15 +235,44 @@
 						>
 							<span class="tri-pill-check">
 								{#if planet_type_filters[Number(key)] === 1}
-									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-										<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke-width="1.5"
+										stroke="currentColor"
+										class="size-6"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+										/>
 									</svg>
 								{:else if planet_type_filters[Number(key)] === -1}
-									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-										<path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke-width="1.5"
+										stroke="currentColor"
+										class="size-6"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+										/>
 									</svg>
 								{:else}
-									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke-width="1.5"
+										stroke="currentColor"
+										class="size-6"
+									>
 										<circle cx="12" cy="12" r="10" />
 									</svg>
 								{/if}
@@ -274,15 +303,44 @@
 						>
 							<span class="tri-pill-check">
 								{#if star_type_filters[Number(key)] === 1}
-									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-										<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke-width="1.5"
+										stroke="currentColor"
+										class="size-6"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+										/>
 									</svg>
 								{:else if star_type_filters[Number(key)] === -1}
-									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-										<path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke-width="1.5"
+										stroke="currentColor"
+										class="size-6"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+										/>
 									</svg>
 								{:else}
-									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke-width="1.5"
+										stroke="currentColor"
+										class="size-6"
+									>
 										<circle cx="12" cy="12" r="10" />
 									</svg>
 								{/if}
@@ -400,22 +458,22 @@
 	}
 	.form {
 		display: grid;
-		gap: 0.75rem;
+		gap: calc(0.75rem * var(--ui-scale));
 	}
 	.row {
 		display: grid;
-		grid-template-columns: 1fr 12rem;
-		gap: 0.5rem;
+		grid-template-columns: 1fr calc(12rem * var(--ui-scale));
+		gap: calc(0.5rem * var(--ui-scale));
 	}
 	.field {
 		display: grid;
-		gap: 0.35rem;
+		gap: calc(0.35rem * var(--ui-scale));
 	}
 	.field.narrow {
 		width: 100%;
 	}
 	.label {
-		font-size: 0.78rem;
+		font-size: calc(0.78rem * var(--ui-scale));
 		opacity: 0.8;
 	}
 	.input,
@@ -425,7 +483,7 @@
 		border-radius: 0.5rem;
 		background: var(--bg);
 		color: var(--text);
-		padding: 0.45rem 0.6rem;
+		padding: calc(0.45rem * var(--ui-scale)) calc(0.6rem * var(--ui-scale));
 		line-height: 1.1;
 	}
 	.input::placeholder {
@@ -446,23 +504,23 @@
 
 	.section {
 		display: grid;
-		gap: 0.5rem;
+		gap: calc(0.5rem * var(--ui-scale));
 	}
 	.section.compact2 {
 		grid-template-columns: 1fr 1fr;
-		gap: 0.5rem;
+		gap: calc(0.5rem * var(--ui-scale));
 	}
 	.section.compact4 {
 		grid-template-columns: repeat(4, 1fr);
-		gap: 0.5rem;
+		gap: calc(0.5rem * var(--ui-scale));
 	}
 	.sub {
 		display: grid;
-		gap: 0.4rem;
+		gap: calc(0.4rem * var(--ui-scale));
 	}
 	h3 {
 		margin: 0;
-		font-size: 0.9rem;
+		font-size: calc(0.9rem * var(--ui-scale));
 	}
 
 	.pill-wrap {

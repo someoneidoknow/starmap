@@ -191,16 +191,18 @@
 <style>
 	.panel {
 		position: fixed;
-		min-width: 180px;
-		max-width: 640px;
+		min-width: calc(180px * var(--ui-scale));
+		max-width: calc(640px * var(--ui-scale));
 		background: var(--surface);
 		color: var(--text);
 		border: 1px solid var(--green-4);
-		border-radius: 0.5rem;
+		border-radius: calc(0.5rem * var(--ui-scale));
 		box-shadow: 0 4px 12px rgb(0 0 0 / 0.2);
 		overflow: hidden;
 		z-index: 900;
 		font-family: system-ui, sans-serif;
+		transform: scale(var(--ui-scale));
+		transform-origin: top left;
 	}
 	.panel .body {
 		overflow: auto;
@@ -212,10 +214,11 @@
 		justify-content: space-between;
 		align-items: center;
 		cursor: move;
-		padding: 0.6rem 1rem 0.5rem;
+		padding: calc(0.6rem * var(--ui-scale)) calc(1rem * var(--ui-scale))
+			calc(0.5rem * var(--ui-scale));
 		background: var(--green-1);
 		border-bottom: 1px solid var(--green-4);
-		border-radius: 0.5rem 0.5rem 0 0;
+		border-radius: calc(0.5rem * var(--ui-scale)) calc(0.5rem * var(--ui-scale)) 0 0;
 		user-select: none;
 	}
 	.arrow {
@@ -227,7 +230,8 @@
 		padding: 0;
 	}
 	.body {
-		padding: 0.5rem 1rem 0.8rem 1.8rem;
+		padding: calc(0.5rem * var(--ui-scale)) calc(1rem * var(--ui-scale))
+			calc(0.8rem * var(--ui-scale)) calc(1.8rem * var(--ui-scale));
 	}
 	.resizer {
 		position: absolute;

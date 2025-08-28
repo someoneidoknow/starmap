@@ -98,7 +98,7 @@
 
 <style>
 	.coords {
-		font-size: 0.8em;
+		font-size: calc(0.8em * var(--ui-scale));
 		color: var(--green-3);
 		margin-left: 0.5em;
 	}
@@ -112,8 +112,8 @@
 		cursor: pointer;
 	}
 	.size-6 {
-		width: 1em;
-		height: 1em;
+		width: calc(1em * var(--ui-scale));
+		height: calc(1em * var(--ui-scale));
 		color: var(--green-3);
 		transition: opacity 0.3s ease;
 	}
@@ -139,21 +139,21 @@
 		padding: 0;
 	}
 	li {
-		line-height: 1.4em;
+		line-height: calc(1.4em * var(--ui-scale));
 		word-break: break-word;
 	}
 	.color .swatch {
 		display: inline-block;
-		width: 1rem;
-		height: 0.85rem;
-		margin: 0 0.4rem 0 0.5rem;
+		width: calc(1rem * var(--ui-scale));
+		height: calc(0.85rem * var(--ui-scale));
+		margin: 0 calc(0.4rem * var(--ui-scale)) 0 calc(0.5rem * var(--ui-scale));
 		vertical-align: text-bottom;
 		border: 1px solid var(--green-4);
-		border-radius: 0.2rem;
+		border-radius: calc(0.2rem * var(--ui-scale));
 	}
 	.resources ul {
 		list-style-type: disc;
-		margin: 0.25rem 0 0 1.2rem;
+		margin: calc(0.25rem * var(--ui-scale)) 0 0 calc(1.2rem * var(--ui-scale));
 		padding: 0;
 	}
 </style>
