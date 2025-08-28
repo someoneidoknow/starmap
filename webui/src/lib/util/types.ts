@@ -156,3 +156,43 @@ export type Player = {
 	userid: number;
 	username: string;
 };
+
+export type AtlasFrame = {
+	x: number;
+	y: number;
+	w: number;
+	h: number;
+};
+
+export type AtlasFrameData = {
+	frame: AtlasFrame;
+	rotated: boolean;
+	trimmed: boolean;
+	spriteSourceSize: {
+		x: number;
+		y: number;
+		w: number;
+		h: number;
+	};
+	sourceSize: {
+		w: number;
+		h: number;
+	};
+};
+
+export type AtlasMeta = {
+	app: string;
+	version: string;
+	image: string;
+	format: string;
+	size: {
+		w: number;
+		h: number;
+	};
+	scale: number;
+};
+
+export type AtlasData = {
+	frames: Record<string, AtlasFrameData>;
+	meta: AtlasMeta;
+};
