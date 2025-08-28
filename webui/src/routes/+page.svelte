@@ -69,12 +69,8 @@
 	}
 
 	function path(px: number, py: number, lx: number, ly: number) {
-		const align = (n: number) => Math.round(n) + 0.5;
-		const ax = align(px);
-		const ay = align(py);
-		const lxA = align(lx);
-		const lyA = align(ly);
-		return `${ax},${ay} ${ax},${lyA} ${lxA},${lyA}`;
+		const a = (n: number) => Math.round(n);
+		return `${a(px)},${a(py)} ${a(px)},${a(ly)} ${a(lx)},${a(ly)}`;
 	}
 
 	const unsub = viewMatrix.subscribe((v) => {
@@ -140,8 +136,10 @@
 			points={path(screenX, screenY, panelX, panelY)}
 			fill="none"
 			stroke="white"
-			stroke-width="1"
-			shape-rendering="crispEdges"
+			stroke-width="1.2"
+			vector-effect="non-scaling-stroke"
+			stroke-linejoin="round"
+			stroke-linecap="round"
 		/>
 	</svg>
 {/if}
