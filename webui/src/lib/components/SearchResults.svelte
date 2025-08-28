@@ -14,6 +14,8 @@
 
 	export let left = 880;
 	export let top = 200;
+	export let width = 620;
+	export let height = 600;
 	export let search_results: SearchResult | null = null;
 
 	let showStars = false;
@@ -69,11 +71,29 @@
 	$: listStars = search_results ? stars() : [];
 
 	const rowHeight = 32;
-	const listHeight = 400;
+	let containerHeight = 400;
+
+	import { browser } from '$app/environment';
+
+	function updateContainerHeight() {
+		if (!browser) return;
+		const reservedSpace = 120;
+		containerHeight = Math.max(50, height - reservedSpace);
+	}
+
 	$: if (search_results) {
 		if (listPlanets.length === 0 && listStars.length > 0 && !showStars) showStars = true;
 		else if (listStars.length === 0 && listPlanets.length > 0 && showStars) showStars = false;
 	}
+
+	$: if (browser && height) updateContainerHeight();
+
+	import { onMount } from 'svelte';
+
+	onMount(() => {
+		if (!browser) return;
+		updateContainerHeight();
+	});
 
 	const planetInfoCache = new WeakMap<Planet, any>();
 	function planetToInfo(p: Planet) {
@@ -124,7 +144,7 @@
 	}
 </script>
 
-<Window bind:left bind:top collapsible={true} width={620} minWidth={480}>
+<Window bind:left bind:top bind:width bind:height collapsible={true} minWidth={480}>
 	<span slot="title">Results</span>
 
 	<div class="toolbar">
@@ -143,7 +163,7 @@
 		{#if listPlanets.length === 0}
 			<div class="empty">No planets matched</div>
 		{:else}
-			<VirtualList items={listPlanets} {rowHeight} height={listHeight} let:item>
+			<VirtualList items={listPlanets} {rowHeight} height={containerHeight} let:item>
 				<div
 					role="button"
 					tabindex="0"
@@ -205,7 +225,7 @@
 	{:else if listStars.length === 0}
 		<div class="empty">No stars matched</div>
 	{:else}
-		<VirtualList items={listStars} {rowHeight} height={listHeight} let:item>
+		<VirtualList items={listStars} {rowHeight} height={containerHeight} let:item>
 			<div
 				role="button"
 				tabindex="0"
