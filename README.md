@@ -1,6 +1,6 @@
 # starmap
 
-starmap for the hit game waste of space
+starmap for the hit game waste of space on the nintendo switch
 
 credits to [dorpg](https://github.com/dorpg9) for the textures
 
