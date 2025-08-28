@@ -342,7 +342,7 @@
 		cursor: pointer;
 		display: grid;
 		align-items: center;
-		gap: 0.3rem;
+		gap: 0.9rem;
 		padding: 0.2rem 0.35rem;
 		border-radius: 0.35rem;
 		border: 1px solid transparent;
@@ -379,6 +379,7 @@
 		font-size: 0.75rem;
 		font-family: monospace;
 		opacity: 0.8;
+		margin-right: 0.35rem; /* extra breathing room before next column / icon */
 	}
 	.row .size {
 		text-align: right;
