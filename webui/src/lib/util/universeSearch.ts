@@ -11,6 +11,7 @@ import type {
 	SearchType,
 	UniverseData
 } from './types';
+import { PlanetType } from './types';
 
 export type Tri = 'any' | 'yes' | 'no';
 
@@ -28,6 +29,7 @@ export interface SearchOptions {
 	resourcesTri?: Record<number, Tri>;
 	color?: string;
 	colorSimilarity?: number;
+	earthlikesInSystem?: Tri;
 }
 
 export function searchUniverse(universe: UniverseData, opts: SearchOptions): SearchResult | null {
@@ -46,6 +48,7 @@ export function searchUniverse(universe: UniverseData, opts: SearchOptions): Sea
 	const color = (opts.color ?? '').trim();
 	const colorSimilarity =
 		typeof opts.colorSimilarity === 'number' ? Math.max(0, Math.min(100, opts.colorSimilarity)) : 0;
+	const earthlikesInSystem = opts.earthlikesInSystem ?? 'any';
 
 	const activeTriKeys = Object.keys(resourcesTri).filter((k) => resourcesTri[Number(k)] !== 'any');
 	const anyTriResources = activeTriKeys.length > 0;
@@ -65,7 +68,8 @@ export function searchUniverse(universe: UniverseData, opts: SearchOptions): Sea
 		gravityRange[0] === 0 &&
 		gravityRange[1] === 300 &&
 		color === '' &&
-		colorSimilarity === 0;
+		colorSimilarity === 0 &&
+		earthlikesInSystem === 'any';
 
 	if (nothingSelected) return null;
 
@@ -90,12 +94,19 @@ export function searchUniverse(universe: UniverseData, opts: SearchOptions): Sea
 		gravityRange[0] !== 0 ||
 		gravityRange[1] !== 300 ||
 		color !== '' ||
-		colorSimilarity !== 0;
+		colorSimilarity !== 0 ||
+		earthlikesInSystem !== 'any';
 
 	if (needFilter) {
 		const filtered_systems = [];
 
 		for (const system of res.solar_systems) {
+			if (earthlikesInSystem !== 'any') {
+				const hasEarthlike = system.planets.some(p => p.type === PlanetType.EarthLike);
+				if (earthlikesInSystem === 'yes' && !hasEarthlike) continue;
+				if (earthlikesInSystem === 'no' && hasEarthlike) continue;
+			}
+
 			var planets = system.planets.filter((p) => {
 				const typeState = planetTypeFilters[p.type] ?? 0;
 				if (typeState === -1) return false;

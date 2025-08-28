@@ -45,6 +45,7 @@
 	let ring_filter: 'any' | 'has' | 'no' = 'any';
 	let atmosphere_filter: 'any' | 'yes' | 'no' = 'any';
 	let tidal_filter: 'any' | 'yes' | 'no' = 'any';
+	let earthlikes_filter: 'any' | 'yes' | 'no' = 'any';
 
 	let temperature_range: [number, number] = [-300, 300];
 	let gravity_range: [number, number] = [0, 300];
@@ -76,7 +77,8 @@
 			gravityRange: gravity_range,
 			...({ resourcesTri: resource_tri } as any),
 			color: color_hex,
-			colorSimilarity: color_similarity
+			colorSimilarity: color_similarity,
+			earthlikesInSystem: earthlikes_filter
 		} as any);
 	}
 
@@ -253,7 +255,7 @@
 			</div>
 		</section>
 
-		<section class="section compact3">
+		<section class="section compact4">
 			<div class="sub">
 				<h3>Atmosphere</h3>
 				<div class="seg sm">
@@ -336,6 +338,35 @@
 						class:selected={tidal_filter === 'no'}
 						on:click={() => {
 							tidal_filter = 'no';
+							run();
+						}}>No</button
+					>
+				</div>
+			</div>
+			<div class="sub">
+				<h3>Earthlikes in System</h3>
+				<div class="seg sm">
+					<button
+						type="button"
+						class:selected={earthlikes_filter === 'any'}
+						on:click={() => {
+							earthlikes_filter = 'any';
+							run();
+						}}>Any</button
+					>
+					<button
+						type="button"
+						class:selected={earthlikes_filter === 'yes'}
+						on:click={() => {
+							earthlikes_filter = 'yes';
+							run();
+						}}>Yes</button
+					>
+					<button
+						type="button"
+						class:selected={earthlikes_filter === 'no'}
+						on:click={() => {
+							earthlikes_filter = 'no';
 							run();
 						}}>No</button
 					>
@@ -440,8 +471,8 @@
 		grid-template-columns: 1fr 1fr;
 		gap: 0.5rem;
 	}
-	.section.compact3 {
-		grid-template-columns: repeat(3, 1fr);
+	.section.compact4 {
+		grid-template-columns: repeat(4, 1fr);
 		gap: 0.5rem;
 	}
 	.sub {
