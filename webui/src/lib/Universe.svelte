@@ -15,9 +15,12 @@
 		type SearchResult,
 		type SolarSystem,
 		type Star,
-		type UniverseData
+		type UniverseData,
+		type AtlasData
 	} from '$lib/util/types';
 	import { dev } from '$app/environment';
+	import { decode } from '@msgpack/msgpack';
+	import { ZSTDDecoder } from 'zstddec';
 	import { getCookie, setCookie } from '$lib/util/cookie';
 
 	const SUBCELLS = 21;
@@ -253,26 +256,42 @@
 		ringTextures['Ice'] = placeholderTexture;
 		ringTextures['Stone'] = placeholderTexture;
 
-		const planetPromises = allPlanetTextureNames.map((name) =>
-			PIXI.Assets.load(`assets/planettexture/${name.toLowerCase()}.png`)
-				.then((tex) => {
-					tex.baseTexture.scaleMode = 'nearest';
-					planetTextures[name] = tex;
-					if (name === 'Icering') ringTextures['Ice'] = tex;
-					if (name === 'Stonering') ringTextures['Stone'] = tex;
+		// Load texture atlas
+		const atlasPromise = fetch('assets/textures.msgpack.zst')
+			.then(response => response.arrayBuffer())
+			.then(async (buffer) => {
+				const compressedData = new Uint8Array(buffer);
+				const decoder = new ZSTDDecoder();
+				await decoder.init();
+				const decompressed = decoder.decode(compressedData);
+				return decode(decompressed) as AtlasData;
+			})
+			.then((atlasData) => {
+				return PIXI.Assets.load('assets/textures.png').then(atlasTexture => {
+					for (const textureName of [...allPlanetTextureNames, ...allStarTextureNames]) {
+						const frameKey = textureName.toLowerCase();
+						if (atlasData.frames[frameKey]) {
+							const frame = atlasData.frames[frameKey].frame;
+							const texture = new PIXI.Texture({
+								source: atlasTexture.source,
+								frame: new PIXI.Rectangle(frame.x, frame.y, frame.w, frame.h)
+							});
+							texture.baseTexture.scaleMode = 'nearest';
+
+							if (allPlanetTextureNames.includes(textureName)) {
+								planetTextures[textureName] = texture;
+								if (textureName === 'Icering') ringTextures['Ice'] = texture;
+								if (textureName === 'Stonering') ringTextures['Stone'] = texture;
+							} else {
+								starTextures[textureName] = texture;
+							}
+						}
+					}
 					should_rebuild = true;
-				})
-				.catch(() => {})
-		);
-		const starPromises = allStarTextureNames.map((name) =>
-			PIXI.Assets.load(`assets/startexture/${name.toLowerCase()}.png`)
-				.then((tex) => {
-					tex.baseTexture.scaleMode = 'nearest';
-					starTextures[name] = tex;
-					should_rebuild = true;
-				})
-				.catch(() => {})
-		);
+				});
+			})
+			.catch(() => {
+			});
 		const backgroundPromise = PIXI.Assets.load('assets/background.avif')
 			.then((tex) => {
 				backgroundSprite.texture = tex;
@@ -282,7 +301,7 @@
 			})
 			.catch(() => {});
 
-		Promise.allSettled([...planetPromises, ...starPromises, backgroundPromise]).then(() => {
+		Promise.allSettled([atlasPromise, backgroundPromise]).then(() => {
 			should_rebuild = true;
 		});
 
