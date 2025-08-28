@@ -1,12 +1,14 @@
 <script lang="ts">
 	import { searchUniverse } from '$lib/util/universeSearch';
 	import Window from './Window.svelte';
+	import TriStateFilter from './TriStateFilter.svelte';
 	import RangeSlider from 'svelte-range-slider-pips';
 	import 'svelte-range-slider-pips/dist/svelte-range-slider-pips.css';
 	import {
 		Resource,
 		SearchType,
 		PlanetType,
+		StarType,
 		type SearchResult,
 		type UniverseData
 	} from '$lib/util/types';
@@ -42,16 +44,19 @@
 	let planet_type_filters: Record<number, number> = {};
 	for (const key in PlanetType) if (!isNaN(Number(key))) planet_type_filters[Number(key)] = 0;
 
-	let ring_filter: 'any' | 'has' | 'no' = 'any';
-	let atmosphere_filter: 'any' | 'yes' | 'no' = 'any';
-	let tidal_filter: 'any' | 'yes' | 'no' = 'any';
-	let earthlikes_filter: 'any' | 'yes' | 'no' = 'any';
+	let star_type_filters: Record<number, number> = {};
+	for (const key in StarType) if (!isNaN(Number(key))) star_type_filters[Number(key)] = 0;
+
+	let ring_filter: number = 0; // 0 = any, 1 = has, -1 = no
+	let atmosphere_filter: number = 0; // 0 = any, 1 = yes, -1 = no
+	let tidal_filter: number = 0; // 0 = any, 1 = yes, -1 = no
+	let earthlikes_filter: number = 0; // 0 = any, 1 = yes, -1 = no
 
 	let temperature_range: [number, number] = [-300, 300];
 	let gravity_range: [number, number] = [0, 300];
 
-	let resource_tri: Record<number, 'any' | 'yes' | 'no'> = {};
-	for (const r of allResources) resource_tri[r] = 'any';
+	let resource_tri: Record<number, number> = {};
+	for (const r of allResources) resource_tri[r] = 0;
 
 	let color_hex = '';
 	let color_similarity = 0;
@@ -64,21 +69,39 @@
 	});
 
 	function run() {
+		const convertTriState = (value: number): 'any' | 'yes' | 'no' => {
+			if (value === 1) return 'yes';
+			if (value === -1) return 'no';
+			return 'any';
+		};
+
+		const convertRingState = (value: number): 'any' | 'has' | 'no' => {
+			if (value === 1) return 'has';
+			if (value === -1) return 'no';
+			return 'any';
+		};
+
+		const convertedResourceTri: Record<number, 'any' | 'yes' | 'no'> = {};
+		for (const r of allResources) {
+			convertedResourceTri[r] = convertTriState(resource_tri[r]);
+		}
+
 		search_results = searchUniverse(universe_data, {
 			name: { query: name_box, mode: name_selected_type },
 			ranmat: { query: ranmat_box, mode: ranmat_selected_type },
 			coords: coord_box,
 			resources: [],
 			planetTypeFilters: planet_type_filters,
-			rings: ring_filter,
-			atmosphere: atmosphere_filter,
-			tidallyLocked: tidal_filter,
+			starTypeFilters: star_type_filters,
+			rings: convertRingState(ring_filter),
+			atmosphere: convertTriState(atmosphere_filter),
+			tidallyLocked: convertTriState(tidal_filter),
 			temperatureRange: temperature_range,
 			gravityRange: gravity_range,
-			...({ resourcesTri: resource_tri } as any),
+			...({ resourcesTri: convertedResourceTri } as any),
 			color: color_hex,
 			colorSimilarity: color_similarity,
-			earthlikesInSystem: earthlikes_filter
+			earthlikesInSystem: convertTriState(earthlikes_filter)
 		} as any);
 	}
 
@@ -210,14 +233,61 @@
 							}}
 							aria-pressed={planet_type_filters[Number(key)] !== 0}
 						>
-							<span class="tri-pill-check"
-								>{planet_type_filters[Number(key)] === 1
-									? '✔'
-									: planet_type_filters[Number(key)] === -1
-										? '✖'
-										: '○'}</span
-							>
+							<span class="tri-pill-check">
+								{#if planet_type_filters[Number(key)] === 1}
+									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+									</svg>
+								{:else if planet_type_filters[Number(key)] === -1}
+									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+										<path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+									</svg>
+								{:else}
+									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+										<circle cx="12" cy="12" r="10" />
+									</svg>
+								{/if}
+							</span>
 							{PlanetType[Number(key)]}
+						</button>
+					{/if}
+				{/each}
+			</div>
+		</section>
+
+		<section class="section">
+			<h3>Star Type</h3>
+			<div class="star-grid">
+				{#each Object.keys(StarType).filter((k) => !isNaN(Number(k))) as key (key)}
+					{#if !isNaN(Number(key))}
+						<button
+							type="button"
+							class="tri-pill sm {star_type_filters[Number(key)] === 1
+								? 'on'
+								: ''} {star_type_filters[Number(key)] === -1 ? 'off' : ''}"
+							on:click={() => {
+								const n = Number(key);
+								star_type_filters[n] = ((star_type_filters[n] + 2) % 3) - 1;
+								run();
+							}}
+							aria-pressed={star_type_filters[Number(key)] !== 0}
+						>
+							<span class="tri-pill-check">
+								{#if star_type_filters[Number(key)] === 1}
+									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+									</svg>
+								{:else if star_type_filters[Number(key)] === -1}
+									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+										<path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+									</svg>
+								{:else}
+									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+										<circle cx="12" cy="12" r="10" />
+									</svg>
+								{/if}
+							</span>
+							{StarType[Number(key)]}
 						</button>
 					{/if}
 				{/each}
@@ -258,119 +328,48 @@
 		<section class="section compact4">
 			<div class="sub">
 				<h3>Atmosphere</h3>
-				<div class="seg sm">
-					<button
-						type="button"
-						class:selected={atmosphere_filter === 'any'}
-						on:click={() => {
-							atmosphere_filter = 'any';
-							run();
-						}}>Any</button
-					>
-					<button
-						type="button"
-						class:selected={atmosphere_filter === 'yes'}
-						on:click={() => {
-							atmosphere_filter = 'yes';
-							run();
-						}}>Yes</button
-					>
-					<button
-						type="button"
-						class:selected={atmosphere_filter === 'no'}
-						on:click={() => {
-							atmosphere_filter = 'no';
-							run();
-						}}>No</button
-					>
-				</div>
+				<TriStateFilter
+					value={atmosphere_filter}
+					onChange={(newValue) => {
+						atmosphere_filter = newValue;
+						run();
+					}}
+					className="sm"
+				/>
 			</div>
 			<div class="sub">
 				<h3>Rings</h3>
-				<div class="seg sm">
-					<button
-						type="button"
-						class:selected={ring_filter === 'any'}
-						on:click={() => {
-							ring_filter = 'any';
-							run();
-						}}>Any</button
-					>
-					<button
-						type="button"
-						class:selected={ring_filter === 'has'}
-						on:click={() => {
-							ring_filter = 'has';
-							run();
-						}}>Has</button
-					>
-					<button
-						type="button"
-						class:selected={ring_filter === 'no'}
-						on:click={() => {
-							ring_filter = 'no';
-							run();
-						}}>No</button
-					>
-				</div>
+				<TriStateFilter
+					value={ring_filter}
+					onChange={(newValue) => {
+						ring_filter = newValue;
+						run();
+					}}
+					yesLabel="Has"
+					className="sm"
+				/>
 			</div>
 			<div class="sub">
 				<h3>Tidally Locked</h3>
-				<div class="seg sm">
-					<button
-						type="button"
-						class:selected={tidal_filter === 'any'}
-						on:click={() => {
-							tidal_filter = 'any';
-							run();
-						}}>Any</button
-					>
-					<button
-						type="button"
-						class:selected={tidal_filter === 'yes'}
-						on:click={() => {
-							tidal_filter = 'yes';
-							run();
-						}}>Yes</button
-					>
-					<button
-						type="button"
-						class:selected={tidal_filter === 'no'}
-						on:click={() => {
-							tidal_filter = 'no';
-							run();
-						}}>No</button
-					>
-				</div>
+				<TriStateFilter
+					value={tidal_filter}
+					onChange={(newValue) => {
+						tidal_filter = newValue;
+						run();
+					}}
+					className="sm"
+				/>
 			</div>
 			<div class="sub">
 				<h3>Earthlikes in System</h3>
-				<div class="seg sm">
-					<button
-						type="button"
-						class:selected={earthlikes_filter === 'any'}
-						on:click={() => {
-							earthlikes_filter = 'any';
-							run();
-						}}>Any</button
-					>
-					<button
-						type="button"
-						class:selected={earthlikes_filter === 'yes'}
-						on:click={() => {
-							earthlikes_filter = 'yes';
-							run();
-						}}>Yes</button
-					>
-					<button
-						type="button"
-						class:selected={earthlikes_filter === 'no'}
-						on:click={() => {
-							earthlikes_filter = 'no';
-							run();
-						}}>No</button
-					>
-				</div>
+				<TriStateFilter
+					value={earthlikes_filter}
+					onChange={(newValue) => {
+						earthlikes_filter = newValue;
+						run();
+					}}
+					className="sm"
+				/>
 			</div>
 		</section>
 
@@ -380,32 +379,14 @@
 				{#each allResources as r}
 					<div class="res-tri">
 						<div class="res-name">{Resource[r]}</div>
-						<div class="seg xs">
-							<button
-								type="button"
-								class:selected={resource_tri[r] === 'any'}
-								on:click={() => {
-									resource_tri[r] = 'any';
-									run();
-								}}>Any</button
-							>
-							<button
-								type="button"
-								class:selected={resource_tri[r] === 'yes'}
-								on:click={() => {
-									resource_tri[r] = 'yes';
-									run();
-								}}>Yes</button
-							>
-							<button
-								type="button"
-								class:selected={resource_tri[r] === 'no'}
-								on:click={() => {
-									resource_tri[r] = 'no';
-									run();
-								}}>No</button
-							>
-						</div>
+						<TriStateFilter
+							value={resource_tri[r]}
+							onChange={(newValue) => {
+								resource_tri[r] = newValue;
+								run();
+							}}
+							className="xs"
+						/>
 					</div>
 				{/each}
 			</div>
@@ -489,6 +470,11 @@
 		flex-wrap: wrap;
 		gap: 0.4rem;
 	}
+	.star-grid {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 0.3rem;
+	}
 	.tri-pill {
 		display: inline-flex;
 		align-items: center;
@@ -515,9 +501,17 @@
 		border-color: #a64a4a;
 	}
 	.tri-pill-check {
-		width: 0.9rem;
-		text-align: center;
+		width: 1rem;
+		height: 1rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 		opacity: 0.9;
+	}
+	.tri-pill-check svg {
+		width: 0.9rem;
+		height: 0.9rem;
+		flex-shrink: 0;
 	}
 
 	.seg {

@@ -11,7 +11,7 @@ import type {
 	SearchType,
 	UniverseData
 } from './types';
-import { PlanetType } from './types';
+import { PlanetType, StarType } from './types';
 
 export type Tri = 'any' | 'yes' | 'no';
 
@@ -30,6 +30,7 @@ export interface SearchOptions {
 	color?: string;
 	colorSimilarity?: number;
 	earthlikesInSystem?: Tri;
+	starTypeFilters?: Record<number, number>;
 }
 
 export function searchUniverse(universe: UniverseData, opts: SearchOptions): SearchResult | null {
@@ -49,6 +50,7 @@ export function searchUniverse(universe: UniverseData, opts: SearchOptions): Sea
 	const colorSimilarity =
 		typeof opts.colorSimilarity === 'number' ? Math.max(0, Math.min(100, opts.colorSimilarity)) : 0;
 	const earthlikesInSystem = opts.earthlikesInSystem ?? 'any';
+	const starTypeFilters = opts.starTypeFilters ?? {};
 
 	const activeTriKeys = Object.keys(resourcesTri).filter((k) => resourcesTri[Number(k)] !== 'any');
 	const anyTriResources = activeTriKeys.length > 0;
@@ -69,7 +71,8 @@ export function searchUniverse(universe: UniverseData, opts: SearchOptions): Sea
 		gravityRange[1] === 300 &&
 		color === '' &&
 		colorSimilarity === 0 &&
-		earthlikesInSystem === 'any';
+		earthlikesInSystem === 'any' &&
+		Object.values(starTypeFilters).every((v) => v === 0);
 
 	if (nothingSelected) return null;
 
@@ -95,7 +98,8 @@ export function searchUniverse(universe: UniverseData, opts: SearchOptions): Sea
 		gravityRange[1] !== 300 ||
 		color !== '' ||
 		colorSimilarity !== 0 ||
-		earthlikesInSystem !== 'any';
+		earthlikesInSystem !== 'any' ||
+		Object.values(starTypeFilters).some((v) => v !== 0);
 
 	if (needFilter) {
 		const filtered_systems = [];
@@ -105,6 +109,19 @@ export function searchUniverse(universe: UniverseData, opts: SearchOptions): Sea
 				const hasEarthlike = system.planets.some(p => p.type === PlanetType.EarthLike);
 				if (earthlikesInSystem === 'yes' && !hasEarthlike) continue;
 				if (earthlikesInSystem === 'no' && hasEarthlike) continue;
+			}
+
+			if (Object.values(starTypeFilters).some((v) => v !== 0)) {
+				const hasMatchingStar = system.stars.some(star => {
+					const starState = starTypeFilters[star.type] ?? 0;
+					return starState === 1;
+				});
+				const hasExcludedStar = system.stars.some(star => {
+					const starState = starTypeFilters[star.type] ?? 0;
+					return starState === -1;
+				});
+				if (hasExcludedStar) continue;
+				if (Object.values(starTypeFilters).some((v) => v === 1) && !hasMatchingStar) continue;
 			}
 
 			var planets = system.planets.filter((p) => {
