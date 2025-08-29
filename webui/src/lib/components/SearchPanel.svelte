@@ -472,6 +472,7 @@
 	.form {
 		display: grid;
 		gap: calc(0.75rem * var(--ui-scale));
+		padding-bottom: 40px;
 	}
 	.row {
 		display: grid;
