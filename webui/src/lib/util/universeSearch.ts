@@ -1,17 +1,14 @@
-import {
-	search_by_coordinate,
-	search_by_name,
-	search_by_ranmat,
-	search_by_resources
-} from './search';
 import type {
 	NullableCoordinate,
 	PlanetResource,
 	SearchResult,
 	SearchType,
-	UniverseData
+	UniverseData,
+	Planet,
+	Resource,
+	Star
 } from './types';
-import { PlanetType, StarType } from './types';
+import { PlanetType, StarType, coordToString } from './types';
 
 export type Tri = 'any' | 'yes' | 'no';
 
@@ -34,8 +31,8 @@ export interface SearchOptions {
 }
 
 export function searchUniverse(universe: UniverseData, opts: SearchOptions): SearchResult | null {
-	const name = (opts.name?.query ?? '').trim();
-	const ranmat = (opts.ranmat?.query ?? '').trim();
+	const name = (opts.name?.query ?? '').trim().toLowerCase();
+	const ranmat = (opts.ranmat?.query ?? '').trim().toLowerCase();
 	const coords = string_to_coordinate((opts.coords ?? '').trim());
 
 	const planetTypeFilters = opts.planetTypeFilters ?? {};
@@ -47,14 +44,13 @@ export function searchUniverse(universe: UniverseData, opts: SearchOptions): Sea
 	const resources = opts.resources ?? [];
 	const resourcesTri = opts.resourcesTri ?? {};
 	const color = (opts.color ?? '').trim();
-	const colorSimilarity =
-		typeof opts.colorSimilarity === 'number' ? Math.max(0, Math.min(100, opts.colorSimilarity)) : 0;
+	const colorSimilarity = typeof opts.colorSimilarity === 'number' ? Math.max(0, Math.min(100, opts.colorSimilarity)) : 0;
 	const earthlikesInSystem = opts.earthlikesInSystem ?? 'any';
 	const starTypeFilters = opts.starTypeFilters ?? {};
 
 	const activeTriKeys = Object.keys(resourcesTri).filter((k) => resourcesTri[Number(k)] !== 'any');
 	const anyTriResources = activeTriKeys.length > 0;
-
+	
 	const nothingSelected =
 		name === '' &&
 		ranmat === '' &&
@@ -76,136 +72,181 @@ export function searchUniverse(universe: UniverseData, opts: SearchOptions): Sea
 
 	if (nothingSelected) return null;
 
-	let res: SearchResult = {
-		solar_systems: universe.solar_systems,
-		universe_map: new Map()
-	};
+	const targetColor = color !== '' && colorSimilarity > 0 ? hexToRgb(color) : null;
+	const colorTolerance = targetColor ? Math.max(1, (colorSimilarity / 100) * 255) : 0;
 
-	if (name !== '') res = search_by_name(res, name, opts.name.mode);
-	if (ranmat !== '') res = search_by_ranmat(res, ranmat, opts.ranmat.mode);
-	if ((opts.coords ?? '') !== '') res = search_by_coordinate(res, coords);
-	if (resources.length !== 0) res = search_by_resources(res, resources);
+	const hasNameFilter = name !== '';
+	const hasRanmatFilter = ranmat !== '';
+	const hasCoordsFilter = (opts.coords ?? '') !== '';
+	const hasResourcesFilter = resources.length > 0;
+	const hasPlanetTypeFilter = Object.values(planetTypeFilters).some((v) => v !== 0);
+	const hasStarTypeFilter = Object.values(starTypeFilters).some((v) => v !== 0);
+	const hasColorFilter = targetColor !== null;
 
-	const needFilter =
-		Object.values(planetTypeFilters).some((v) => v !== 0) ||
-		rings !== 'any' ||
-		atmosphere !== 'any' ||
-		tidallyLocked !== 'any' ||
-		anyTriResources ||
-		temperatureRange[0] !== -300 ||
-		temperatureRange[1] !== 300 ||
-		gravityRange[0] !== 0 ||
-		gravityRange[1] !== 300 ||
-		color !== '' ||
-		colorSimilarity !== 0 ||
-		earthlikesInSystem !== 'any' ||
-		Object.values(starTypeFilters).some((v) => v !== 0);
-
-	if (needFilter) {
-		const filtered_systems = [];
-
-		for (const system of res.solar_systems) {
-			if (earthlikesInSystem !== 'any') {
-				const hasEarthlike = system.planets.some(p => p.type === PlanetType.EarthLike);
-				if (earthlikesInSystem === 'yes' && !hasEarthlike) continue;
-				if (earthlikesInSystem === 'no' && hasEarthlike) continue;
-			}
-
-			if (Object.values(starTypeFilters).some((v) => v !== 0)) {
-				const hasMatchingStar = system.stars.some(star => {
-					const starState = starTypeFilters[star.type] ?? 0;
-					return starState === 1;
-				});
-				const hasExcludedStar = system.stars.some(star => {
-					const starState = starTypeFilters[star.type] ?? 0;
-					return starState === -1;
-				});
-				if (hasExcludedStar) continue;
-				if (Object.values(starTypeFilters).some((v) => v === 1) && !hasMatchingStar) continue;
-			}
-
-			var planets = system.planets.filter((p) => {
-				const typeState = planetTypeFilters[p.type] ?? 0;
-				if (typeState === -1) return false;
-				if (typeState === 0 && Object.values(planetTypeFilters).some((v) => v === 1)) return false;
-
-				if (rings === 'has' && !p.ring) return false;
-				if (rings === 'no' && p.ring) return false;
-
-				if (atmosphere === 'yes' && !p.atmosphere) return false;
-				if (atmosphere === 'no' && p.atmosphere) return false;
-
-				// because arvid is not my ♥ we have to check the daycycle increment
-				if (tidallyLocked === 'yes' && p.daycycle_increment !== 0) return false;
-				if (tidallyLocked === 'no' && p.daycycle_increment === 0) return false;
-
-				if (p.temperature < temperatureRange[0] || p.temperature > temperatureRange[1])
-					return false;
-				if (p.gravity < gravityRange[0] || p.gravity > gravityRange[1]) return false;
-
-				if (anyTriResources) {
-					for (const key of activeTriKeys) {
-						const r = Number(key);
-						const want = resourcesTri[r];
-						const hit = p.resources.find(
-							(pr) =>
-								pr.resource === (r as any) ||
-								String(pr.resource) === String(r) ||
-								Number(pr.resource as any) === r
-						);
-						const amount = hit?.amount ?? 0;
-						if (want === 'yes' && amount <= 0) {
-							return false;
-						}
-						if (want === 'no' && amount > 0) {
-							return false;
-						}
-					}
-				}
-				if (color !== '' && colorSimilarity > 0) {
-					const target = hexToRgb(color);
-					if (target) {
-						const tol = Math.max(1, (colorSimilarity / 100) * 255);
-						const pcol = p.primary_color;
-						if (Math.abs(pcol.r - target.r) > tol) return false;
-						if (Math.abs(pcol.g - target.g) > tol) return false;
-						if (Math.abs(pcol.b - target.b) > tol) return false;
-					}
-				}
-				return true;
-			});
-
-			if (color !== '' && colorSimilarity > 0) {
-				const target = hexToRgb(color);
-				if (target) {
-					planets = planets.sort((a, b) => {
-						const da = Math.sqrt(
-							(a.primary_color.r - target.r) ** 2 +
-								(a.primary_color.g - target.g) ** 2 +
-								(a.primary_color.b - target.b) ** 2
-						);
-						const db = Math.sqrt(
-							(b.primary_color.r - target.r) ** 2 +
-								(b.primary_color.g - target.g) ** 2 +
-								(b.primary_color.b - target.b) ** 2
-						);
-						return da - db;
-					});
-				}
-			}
-
-			if (planets.length > 0) filtered_systems.push({ ...system, planets });
-		}
-
-		const map = new Map();
-		for (const system of filtered_systems) {
-			for (const planet of system.planets) map.set(JSON.stringify(planet.coordinate), planet);
-			for (const star of system.stars) map.set(JSON.stringify(star.coordinate), star);
-		}
-		res = { solar_systems: filtered_systems, universe_map: map };
+	const resourcesMap = new Map<Resource, number>();
+	for (const res of resources) {
+		resourcesMap.set(res.resource, res.amount);
 	}
 
-	return res;
+	const filtered_systems = [];
+	const universeMap = new Map<string, Planet | Star>();
+
+	for (const system of universe.solar_systems) {
+		if (earthlikesInSystem !== 'any') {
+			const hasEarthlike = system.planets.some(p => p.type === PlanetType.EarthLike);
+			if (earthlikesInSystem === 'yes' && !hasEarthlike) continue;
+			if (earthlikesInSystem === 'no' && hasEarthlike) continue;
+		}
+
+		if (hasStarTypeFilter) {
+			const hasMatchingStar = system.stars.some(star => {
+				const starState = starTypeFilters[star.type] ?? 0;
+				return starState === 1;
+			});
+			const hasExcludedStar = system.stars.some(star => {
+				const starState = starTypeFilters[star.type] ?? 0;
+				return starState === -1;
+			});
+			if (hasExcludedStar) continue;
+			if (Object.values(starTypeFilters).some((v) => v === 1) && !hasMatchingStar) continue;
+		}
+
+		const matchingPlanets = [];
+
+		for (const planet of system.planets) {
+			if (hasPlanetTypeFilter) {
+				const typeState = planetTypeFilters[planet.type] ?? 0;
+				if (typeState === -1) continue;
+				if (typeState === 0 && Object.values(planetTypeFilters).some((v) => v === 1)) continue;
+			}
+
+			if (hasNameFilter) {
+				const planetName = planet.name.toLowerCase();
+				let nameMatches = false;
+				switch (opts.name.mode) {
+					case 0:
+						nameMatches = planetName.startsWith(name);
+						break;
+					case 1:
+						nameMatches = planetName.includes(name);
+						break;
+					case 2:
+						nameMatches = planetName.endsWith(name);
+						break;
+				}
+				if (!nameMatches) continue;
+			}
+
+			if (hasRanmatFilter) {
+				if (!planet.random_material) continue;
+				const planetRanmat = planet.random_material.toLowerCase();
+				let ranmatMatches = false;
+				switch (opts.ranmat.mode) {
+					case 0:
+						ranmatMatches = planetRanmat.startsWith(ranmat);
+						break;
+					case 1:
+						ranmatMatches = planetRanmat.includes(ranmat);
+						break;
+					case 2:
+						ranmatMatches = planetRanmat.endsWith(ranmat);
+						break;
+				}
+				if (!ranmatMatches) continue;
+			}
+
+			if (hasCoordsFilter) {
+				if (!coordMatches(planet.coordinate, coords)) continue;
+			}
+
+			if (hasResourcesFilter) {
+				if (!planetHasResources(planet.resources, resourcesMap)) continue;
+			}
+
+			if (rings === 'has' && !planet.ring) continue;
+			if (rings === 'no' && planet.ring) continue;
+
+			if (atmosphere === 'yes' && !planet.atmosphere) continue;
+			if (atmosphere === 'no' && planet.atmosphere) continue;
+
+			if (tidallyLocked === 'yes' && planet.daycycle_increment !== 0) continue;
+			if (tidallyLocked === 'no' && planet.daycycle_increment === 0) continue;
+
+			if (planet.temperature < temperatureRange[0] || planet.temperature > temperatureRange[1]) continue;
+			if (planet.gravity < gravityRange[0] || planet.gravity > gravityRange[1]) continue;
+
+			if (anyTriResources) {
+				let triResourcesMatch = true;
+				for (const key of activeTriKeys) {
+					const r = Number(key);
+					const want = resourcesTri[r];
+					const hit = planet.resources.find(pr => pr.resource === r);
+					const amount = hit?.amount ?? 0;
+					if (want === 'yes' && amount <= 0) {
+						triResourcesMatch = false;
+						break;
+					}
+					if (want === 'no' && amount > 0) {
+						triResourcesMatch = false;
+						break;
+					}
+				}
+				if (!triResourcesMatch) continue;
+			}
+
+			if (hasColorFilter) {
+				const pcol = planet.primary_color;
+				if (Math.abs(pcol.r - targetColor.r) > colorTolerance ||
+					Math.abs(pcol.g - targetColor.g) > colorTolerance ||
+					Math.abs(pcol.b - targetColor.b) > colorTolerance) continue;
+			}
+
+			matchingPlanets.push(planet);
+		}
+
+		if (matchingPlanets.length > 0) {
+			let finalPlanets = matchingPlanets;
+
+			if (hasColorFilter) {
+				finalPlanets = matchingPlanets.sort((a, b) => {
+					const da = Math.sqrt(
+						(a.primary_color.r - targetColor.r) ** 2 +
+						(a.primary_color.g - targetColor.g) ** 2 +
+						(a.primary_color.b - targetColor.b) ** 2
+					);
+					const db = Math.sqrt(
+						(b.primary_color.r - targetColor.r) ** 2 +
+						(b.primary_color.g - targetColor.g) ** 2 +
+						(b.primary_color.b - targetColor.b) ** 2
+					);
+					return da - db;
+				});
+			}
+
+			for (const planet of finalPlanets) {
+				universeMap.set(coordToString(planet.coordinate), planet);
+			}
+			for (const star of system.stars) {
+				universeMap.set(coordToString(star.coordinate), star);
+			}
+
+			const systemResources: PlanetResource[] = [];
+			for (const planet of finalPlanets) {
+				systemResources.push(...planet.resources);
+			}
+
+			filtered_systems.push({
+				planets: finalPlanets,
+				stars: system.stars,
+				resources: systemResources
+			});
+		}
+	}
+
+	return {
+		solar_systems: filtered_systems,
+		universe_map: universeMap
+	};
 }
 
 function string_to_coordinate(str: string): NullableCoordinate {
@@ -244,4 +285,21 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
 			.join('');
 	const num = parseInt(h, 16);
 	return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+}
+
+function coordMatches(coord: NullableCoordinate, target: NullableCoordinate): boolean {
+	const dimensions: (keyof NullableCoordinate)[] = ['x', 'y', 'z', 'w'];
+	for (const dim of dimensions) {
+		if (target[dim] === undefined) continue;
+		if (coord[dim] === undefined || coord[dim] !== target[dim]) return false;
+	}
+	return true;
+}
+
+function planetHasResources(planetResources: PlanetResource[], requiredMap: Map<Resource, number>): boolean {
+	for (const [resource, amount] of requiredMap) {
+		const planetResource = planetResources.find(pr => pr.resource === resource);
+		if (!planetResource || planetResource.amount < amount) return false;
+	}
+	return true;
 }
