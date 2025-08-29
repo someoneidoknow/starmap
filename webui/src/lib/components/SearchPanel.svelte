@@ -127,12 +127,19 @@
 			});
 		}
 		if (ro && formEl) ro.disconnect();
+		if (searchTimeoutId !== null) {
+			clearTimeout(searchTimeoutId);
+		}
 	});
 	onDestroy(() => {
 		if (ro && formEl) ro.disconnect();
 	});
 
-	function run() {
+	let searchTimeoutId: ReturnType<typeof setTimeout> | null = null;
+	let lastSearchTime = 0;
+	const SEARCH_RATE_LIMIT = 100;
+
+	function runSearch() {
 		const convertTriState = (value: number): 'any' | 'yes' | 'no' => {
 			if (value === 1) return 'yes';
 			if (value === -1) return 'no';
@@ -167,6 +174,25 @@
 			colorSimilarity: color_similarity,
 			earthlikesInSystem: convertTriState(earthlikes_filter)
 		} as any);
+	}
+
+	function run() {
+		const now = Date.now();
+		
+		if (searchTimeoutId !== null) {
+			clearTimeout(searchTimeoutId);
+		}
+
+		if (now - lastSearchTime >= SEARCH_RATE_LIMIT) {
+			lastSearchTime = now;
+			runSearch();
+		} else {
+			searchTimeoutId = setTimeout(() => {
+				lastSearchTime = Date.now();
+				runSearch();
+				searchTimeoutId = null;
+			}, SEARCH_RATE_LIMIT - (now - lastSearchTime));
+		}
 	}
 
 	function name_oninput(e: Event & { currentTarget: EventTarget & HTMLInputElement }) {
