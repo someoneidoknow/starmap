@@ -139,6 +139,12 @@
 		if (maxHeight === undefined && typeof window !== 'undefined')
 			maxHeight = window.innerHeight - 40;
 		if (headerEl) headerHeight = headerEl.offsetHeight;
+		requestAnimationFrame(() => {
+			if (!collapsed && !height && panelEl) {
+				const mh = maxHeight;
+				if (mh !== undefined && panelEl.scrollHeight > mh) height = mh;
+			}
+		});
 	});
 
 	$: if (headerEl) headerHeight = headerEl.offsetHeight;
