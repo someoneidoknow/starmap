@@ -64,10 +64,15 @@
 	let sizeClass = '';
 	let formEl: HTMLDivElement;
 	let ro: ResizeObserver | null = null;
+	let spMaxHeight: number | undefined;
+	const spMinWidth = 360;
 	onMount(async () => {
 		if (typeof window !== 'undefined') {
 			await import('vanilla-colorful/hex-color-picker.js');
 			colorPickerReady = true;
+			const updateMaxH = () => { spMaxHeight = window.innerHeight - 16; };
+			updateMaxH();
+			window.addEventListener('resize', updateMaxH);
 			if (formEl) {
 				ro = new ResizeObserver((entries) => {
 					const w = entries[0].contentRect.width;
@@ -76,6 +81,13 @@
 				ro.observe(formEl);
 			}
 		}
+	});
+	
+	onDestroy(() => {
+		if (typeof window !== 'undefined') {
+			window.removeEventListener('resize', () => { spMaxHeight = window.innerHeight - 16; });
+		}
+		if (ro && formEl) ro.disconnect();
 	});
 	onDestroy(() => {
 		if (ro && formEl) ro.disconnect();
@@ -152,7 +164,7 @@
 	}
 </script>
 
-<Window bind:left bind:top collapsible={true}>
+<Window bind:left bind:top collapsible={true} minWidth={spMinWidth} maxHeight={spMaxHeight}>
 	<span slot="title">Search</span>
 
 	<div class="form {sizeClass}" bind:this={formEl}>
