@@ -89,12 +89,9 @@ export async function parseUniverse(rawData?: any): Promise<UniverseData> {
 				g: entry.SecondaryColor[1],
 				b: entry.SecondaryColor[2]
 			};
-			const generation_height_scale = entry.GenerationHeightScale;
-			const water_level = entry.WaterLevel;
 			const atmosphere = entry.Atmosphere;
 			const temperature = entry.Temperature;
 			const gravity = entry.Gravity;
-			const starting_time = entry.StartingTime;
 			const daycycle_increment = entry.DayCycleIncrement;
 			const random_material = entry.RandomMaterial;
 
@@ -117,9 +114,6 @@ export async function parseUniverse(rawData?: any): Promise<UniverseData> {
 			let ring: PlanetRing | undefined = undefined;
 			if ('Rings' in entry) {
 				const rings = entry.Rings;
-				const amount = rings.Amount;
-				const start = rings.Start;
-				const end = rings.End;
 				const type = string_to_ring_type(rings.Type);
 				if (type === null) {
 					console.warn('Malformed ring type');
@@ -127,9 +121,9 @@ export async function parseUniverse(rawData?: any): Promise<UniverseData> {
 				}
 
 				ring = {
-					amount,
-					start,
-					end,
+					amount: 0,
+					start: 0,
+					end: 0,
 					type
 				};
 			}
@@ -141,12 +135,12 @@ export async function parseUniverse(rawData?: any): Promise<UniverseData> {
 				primary_color,
 				secondary_color,
 				material,
-				generation_height_scale,
-				water_level,
+				generation_height_scale: 0,
+				water_level: 0,
 				atmosphere,
 				temperature,
 				gravity,
-				starting_time,
+				starting_time: 0,
 				daycycle_increment,
 				random_material,
 				resources,
