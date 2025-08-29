@@ -572,42 +572,6 @@
 		flex-shrink: 0;
 	}
 
-	.seg {
-		display: inline-grid;
-		grid-auto-flow: column;
-	}
-	.seg button {
-		border: 1px solid var(--green-3);
-		background: var(--bg);
-		color: var(--text);
-		padding: 0.32rem 0.6rem;
-		line-height: 1;
-	}
-	.seg.sm button {
-		padding: 0.32rem 0.5rem;
-		font-size: 0.88rem;
-	}
-	.seg.xs button {
-		padding: 0.26rem 0.45rem;
-		font-size: 0.82rem;
-	}
-	.seg button:first-child {
-		border-radius: 0.5rem 0 0 0.5rem;
-	}
-	.seg button:last-child {
-		border-radius: 0 0.5rem 0.5rem 0;
-	}
-	.seg button:not(:first-child) {
-		border-left: none;
-	}
-	.seg button:hover {
-		border-color: var(--green-4);
-	}
-	.seg button.selected {
-		background: var(--green-2);
-		border-color: var(--green-4);
-	}
-
 	.res-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
