@@ -368,6 +368,7 @@
 		<section class="section compact2">
 			<div class="sub">
 				<h3>Temperature (−300 to 300)</h3>
+				<div class="unscaled">
 				<RangeSlider
 					min={-300}
 					max={300}
@@ -379,9 +380,11 @@
 					}}
 					class="rs"
 				/>
+				</div>
 			</div>
 			<div class="sub">
 				<h3>Gravity (0g to 300g)</h3>
+				<div class="unscaled">
 				<RangeSlider
 					min={0}
 					max={300}
@@ -393,6 +396,7 @@
 					}}
 					class="rs"
 				/>
+				</div>
 			</div>
 		</section>
 

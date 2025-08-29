@@ -213,6 +213,12 @@
 		transform: scale(var(--ui-scale));
 		transform-origin: top left;
 	}
+	.panel :global(.unscaled) {
+		transform: scale(calc(1 / var(--ui-scale)));
+		transform-origin: left top;
+		width: calc(100% * var(--ui-scale));
+		display: block;
+	}
 	.panel .body {
 		overflow: auto;
 		height: 100%;
