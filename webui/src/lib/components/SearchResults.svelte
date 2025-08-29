@@ -379,7 +379,7 @@
 		font-size: 0.75rem;
 		font-family: monospace;
 		opacity: 0.8;
-		margin-right: 0.35rem; /* extra breathing room before next column / icon */
+		margin-right: 0.35rem;
 	}
 	.row .size {
 		text-align: right;
