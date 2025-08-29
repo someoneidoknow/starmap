@@ -140,13 +140,23 @@
 		if (maxHeight === undefined && typeof window !== 'undefined')
 			maxHeight = window.innerHeight - 40;
 		if (headerEl) headerHeight = headerEl.offsetHeight;
-		requestAnimationFrame(() => {
+	
+		const checkHeight = () => {
 			if (!collapsed && !height && panelEl) {
 				const mh = maxHeight;
-				if (mh !== undefined && panelEl.scrollHeight > mh) height = mh;
+				if (mh !== undefined && panelEl.scrollHeight > mh) {
+					height = mh;
+				}
 			}
 			enforceBounds();
-		});
+		};
+		
+		// this code sucks so much
+		requestAnimationFrame(checkHeight);
+		setTimeout(checkHeight, 0);
+		setTimeout(checkHeight, 10);
+		setTimeout(checkHeight, 100);
+		
 		if (typeof window !== 'undefined') {
 			const onR = () => enforceBounds();
 			window.addEventListener('resize', onR);
