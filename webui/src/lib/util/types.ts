@@ -192,3 +192,7 @@ export type AtlasData = {
 	frames: Record<string, AtlasFrameData>;
 	meta: AtlasMeta;
 };
+
+export function coordToString(coord: NullableCoordinate): string {
+	return `${coord.x},${coord.y},${coord.z},${coord.w}`;
+}
