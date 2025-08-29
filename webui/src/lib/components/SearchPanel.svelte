@@ -61,11 +61,42 @@
 	let color_hex = '';
 	let color_similarity = 0;
 	let colorPickerReady = false;
+	let color_input = '';
+	let hexPickerEl: any;
 	let sizeClass = '';
 	let formEl: HTMLDivElement;
 	let ro: ResizeObserver | null = null;
 	let spMaxHeight: number | undefined;
 	const spMinWidth = 360;
+	function normalizeColor(v: string): string | '' {
+		if (!v) return '';
+		v = v.trim();
+		const hexMatch = /^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+		if (hexMatch.test(v)) {
+			let h = v.replace('#', '').toLowerCase();
+			if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+			return '#' + h;
+		}
+		const rgbMatch = /^rgb\s*\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/i;
+		const m = v.match(rgbMatch);
+		if (m) {
+			const r = Math.min(255, parseInt(m[1]));
+			const g = Math.min(255, parseInt(m[2]));
+			const b = Math.min(255, parseInt(m[3]));
+			const toHex = (n: number) => n.toString(16).padStart(2, '0');
+			return '#' + toHex(r) + toHex(g) + toHex(b);
+		}
+		return '';
+	}
+	function color_text_oninput(e: Event & { currentTarget: EventTarget & HTMLInputElement }) {
+		color_input = e.currentTarget.value;
+		const n = normalizeColor(color_input);
+		if (n) {
+			color_hex = n;
+			if (hexPickerEl) hexPickerEl.color = n;
+			run();
+		}
+	}
 	onMount(async () => {
 		if (typeof window !== 'undefined') {
 			await import('vanilla-colorful/hex-color-picker.js');
@@ -208,14 +239,20 @@
 			<div class="color-row">
 				{#if colorPickerReady}
 					<hex-color-picker
-						value={color_hex}
+						bind:this={hexPickerEl}
+						color={color_hex}
 						on:color-changed={(e: any) => {
 							color_hex = e.detail.value;
+							color_input = color_hex;
 							run();
 						}}
 					></hex-color-picker>
 				{/if}
 				<div class="color-sim">
+							<label class="field">
+								<span class="label">Manual color</span>
+								<input class="input" bind:value={color_input} on:input={color_text_oninput} placeholder="#ff8800 or rgb(255,136,0)" />
+							</label>
 					<label class="field">
 						<span class="label"
 							>Color tolerance {color_similarity}% {color_similarity === 0 ? '(off)' : ''}</span
@@ -233,6 +270,7 @@
 						class="clear"
 						on:click={() => {
 							color_hex = '';
+							color_input = '';
 							color_similarity = 0;
 							run();
 						}}>Clear</button
