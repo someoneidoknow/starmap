@@ -358,29 +358,34 @@
 			select = true;
 			select_last = { x: e.clientX, y: e.clientY };
 		};
+		let rafMove = false
 		const onMouseMove = (e: MouseEvent) => {
-			if (dragging) {
-				universe.x += e.clientX - last.x;
-				universe.y += e.clientY - last.y;
-				anchorScr.x += e.clientX - last.x;
-				anchorScr.y += e.clientY - last.y;
-				last = { x: e.clientX, y: e.clientY };
-			}
-			const c = toUniverseCoords(e.clientX, e.clientY);
-			mouse_pos = { x: e.clientX, y: e.clientY };
-			if (c) {
-				if (scale < planetShowAt) {
-					c.z = 0;
-					c.w = 0;
+			if (rafMove) return
+			rafMove = true
+			requestAnimationFrame(() => {
+				rafMove = false
+				if (dragging) {
+					universe.x += e.clientX - last.x
+					universe.y += e.clientY - last.y
+					anchorScr.x += e.clientX - last.x
+					anchorScr.y += e.clientY - last.y
+					last = { x: e.clientX, y: e.clientY }
 				}
-				coordText.textContent = `${c.x}, ${c.y}, ${c.z}, ${c.w}`;
-			}
-
-			let diff = Math.abs(select_last.x - e.clientX) + Math.abs(select_last.y - e.clientY);
-			if (diff >= select_distance_threshold) {
-				select = false;
-			}
-		};
+				const c = toUniverseCoords(e.clientX, e.clientY)
+				mouse_pos = { x: e.clientX, y: e.clientY }
+				if (c) {
+					if (scale < planetShowAt) {
+						c.z = 0
+						c.w = 0
+					}
+					coordText.textContent = `${c.x}, ${c.y}, ${c.z}, ${c.w}`
+				}
+				let diff = Math.abs(select_last.x - e.clientX) + Math.abs(select_last.y - e.clientY)
+				if (diff >= select_distance_threshold) {
+					select = false
+				}
+			})
+		}
 		const onMouseUp = (e: MouseEvent) => {
 			dragging = false;
 
@@ -395,24 +400,30 @@
 			dragging = false;
 			select = true;
 		};
+		let rafWheel = false
 		const onWheel = (e: WheelEvent) => {
-			if (e.ctrlKey) e.preventDefault();
-			let modeScale = 1;
-			if (e.deltaMode === 1) modeScale = 16;
-			else if (e.deltaMode === 2) modeScale = window.innerHeight;
-			const speed = Math.abs(e.deltaY);
-			const accel = Math.min(4, 1 + speed / 480);
-			const base = e.ctrlKey ? 0.0008 : 0.0012;
-			const isTrackpad = e.deltaMode === 0 && Math.abs(e.deltaY) < 60;
-			const factor = Math.exp(-e.deltaY * base * modeScale * accel * (isTrackpad ? 3 : 1));
-			const clamped = factor > 1 ? Math.min(1.5, factor) : Math.max(0.666, factor);
-			targetScale = Math.max(minZoom, Math.min(maxZoom, targetScale * clamped));
-			anchorScr = { x: e.clientX, y: e.clientY };
-			anchorWorld = {
-				x: (anchorScr.x - universe.x) / scale,
-				y: (anchorScr.y - universe.y) / scale
-			};
-		};
+			if (rafWheel) return
+			rafWheel = true
+			requestAnimationFrame(() => {
+				rafWheel = false
+				if (e.ctrlKey) e.preventDefault()
+				let modeScale = 1
+				if (e.deltaMode === 1) modeScale = 16
+				else if (e.deltaMode === 2) modeScale = window.innerHeight
+				const speed = Math.abs(e.deltaY)
+				const accel = Math.min(4, 1 + speed / 480)
+				const base = e.ctrlKey ? 0.0008 : 0.0012
+				const isTrackpad = e.deltaMode === 0 && Math.abs(e.deltaY) < 60
+				const factor = Math.exp(-e.deltaY * base * modeScale * accel * (isTrackpad ? 3 : 1))
+				const clamped = factor > 1 ? Math.min(1.5, factor) : Math.max(0.666, factor)
+				targetScale = Math.max(minZoom, Math.min(maxZoom, targetScale * clamped))
+				anchorScr = { x: e.clientX, y: e.clientY }
+				anchorWorld = {
+					x: (anchorScr.x - universe.x) / scale,
+					y: (anchorScr.y - universe.y) / scale
+				}
+			})
+		}
 
 		let current_coordinates: Coordinate = { x: -100, y: -100, z: 0, w: 0 };
 		let shift_held = false;
