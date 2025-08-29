@@ -12,7 +12,7 @@
 		type SearchResult,
 		type UniverseData
 	} from '$lib/util/types';
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 
 	export let left = 200;
 	export let top = 200;
@@ -61,11 +61,24 @@
 	let color_hex = '';
 	let color_similarity = 0;
 	let colorPickerReady = false;
+	let sizeClass = '';
+	let formEl: HTMLDivElement;
+	let ro: ResizeObserver | null = null;
 	onMount(async () => {
 		if (typeof window !== 'undefined') {
 			await import('vanilla-colorful/hex-color-picker.js');
 			colorPickerReady = true;
+			if (formEl) {
+				ro = new ResizeObserver((entries) => {
+					const w = entries[0].contentRect.width;
+					sizeClass = w < 420 ? 'xs' : w < 500 ? 'sm' : w < 660 ? 'md' : '';
+				});
+				ro.observe(formEl);
+			}
 		}
+	});
+	onDestroy(() => {
+		if (ro && formEl) ro.disconnect();
 	});
 
 	function run() {
@@ -142,7 +155,7 @@
 <Window bind:left bind:top collapsible={true}>
 	<span slot="title">Search</span>
 
-	<div class="form">
+	<div class="form {sizeClass}" bind:this={formEl}>
 		<div class="row">
 			<label class="field">
 				<span class="label">Name</span>
@@ -462,8 +475,56 @@
 	}
 	.row {
 		display: grid;
-		grid-template-columns: 1fr calc(12rem * var(--ui-scale));
+		grid-template-columns: 1fr minmax(8rem, 30%);
 		gap: calc(0.5rem * var(--ui-scale));
+		align-items: end;
+	}
+	.form.md .row {
+		grid-template-columns: 1fr minmax(9rem, 34%);
+	}
+	.form.sm .row {
+		grid-template-columns: 1fr 42%;
+	}
+	.form.xs .row {
+		grid-template-columns: 1fr;
+	}
+	.form.xs .field.narrow {
+		width: 100%;
+	}
+	.form.sm .section.compact4,
+	.form.md .section.compact4 {
+		grid-template-columns: repeat(2, 1fr);
+	}
+	.form.xs .section.compact4 {
+		grid-template-columns: repeat(2, 1fr);
+	}
+	.form.xs .section.compact2,
+	.form.sm .section.compact2 {
+		grid-template-columns: 1fr;
+	}
+	.form.md .star-grid {
+		grid-template-columns: repeat(2, 1fr);
+	}
+	.form.sm .star-grid {
+		grid-template-columns: repeat(2, 1fr);
+	}
+	.form.xs .star-grid {
+		grid-template-columns: 1fr;
+	}
+	.form.xs .res-grid {
+		grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+	}
+	.form.sm .res-grid {
+		grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));
+	}
+	.form.md .res-grid {
+		grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+	}
+	.form.xs .res-tri {
+		grid-template-columns: 1fr;
+	}
+	.form.xs .res-name {
+		font-size: 0.78rem;
 	}
 	.field {
 		display: grid;
