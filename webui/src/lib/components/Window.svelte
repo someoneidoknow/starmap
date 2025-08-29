@@ -10,6 +10,7 @@
 	export let height: number | undefined = undefined;
 	export let minHeight: number | undefined = undefined;
 	export let maxHeight: number | undefined = undefined;
+	export let autoWidth = false;
 
 	let startX = 0;
 	let startY = 0;
@@ -184,7 +185,7 @@
 	class="panel"
 	style:left={`${left}px`}
 	style:top={`${top}px`}
-	style:width={(width ?? 620) + 'px'}
+	style:width={autoWidth ? (width ? width + 'px' : undefined) : (width ?? 620) + 'px'}
 	style:min-width={minWidth ? minWidth + 'px' : undefined}
 	style:max-width={maxWidth ? maxWidth + 'px' : undefined}
 	style:height={collapsed ? headerHeight + 'px' : height ? height + 'px' : undefined}
