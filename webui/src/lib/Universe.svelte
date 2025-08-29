@@ -10,6 +10,7 @@
 		PlanetType,
 		RingType,
 		StarType,
+		coordToString,
 		type Coordinate,
 		type Planet,
 		type SearchResult,
@@ -327,11 +328,11 @@
 			
 			for (const system of universe_data.solar_systems) {
 				for (const star of universe_data.stars) {
-					universe_map.set(JSON.stringify(star.coordinate), star);
+					universe_map.set(coordToString(star.coordinate), star);
 				}
 
 				for (const planet of system.planets) {
-					universe_map.set(JSON.stringify(planet.coordinate), planet);
+					universe_map.set(coordToString(planet.coordinate), planet);
 				}
 			}
 		}
@@ -455,7 +456,7 @@
 						let coords: Coordinate = { x, y, z: 0, w: 0 };
 
 						// use search results, otherwise universe map
-						let str = JSON.stringify(coords);
+						let str = coordToString(coords);
 						let has = search_results ? search_results.universe_map.has(str) : universe_map.has(str);
 						if (has) {
 							current_coordinates = coords;
@@ -478,7 +479,7 @@
 					) {
 						let coords: Coordinate = { x, y, z: 0, w: 0 };
 
-						let str = JSON.stringify(coords);
+						let str = coordToString(coords);
 						let has = search_results ? search_results.universe_map.has(str) : universe_map.has(str);
 						if (has) {
 							current_coordinates = coords;
@@ -607,7 +608,7 @@
 					const cx = sx * DETAIL;
 					const cy = sy * DETAIL;
 					const diameter = starRadius * DETAIL * sFactor * 2;
-					const visible = search_results === null ? true : search_results.universe_map.has(JSON.stringify(planet.coordinate));
+					const visible = search_results === null ? true : search_results.universe_map.has(coordToString(planet.coordinate));
 					if (planet.atmosphere) {
 						let glow: PIXI.Sprite;
 						if (i < children.length) glow = children[i]; else { glow = new PIXI.Sprite(); glow.anchor.set(0.5); gStars.addChild(glow); }
@@ -674,7 +675,7 @@
 				const visible =
 					search_results === null
 						? true
-						: search_results.universe_map.has(JSON.stringify(star.coordinate));
+						: search_results.universe_map.has(coordToString(star.coordinate));
 
 				let glow: PIXI.Sprite;
 				if (i < children.length) {
@@ -746,7 +747,7 @@
 
 				let has = false;
 				if (search_results !== null) {
-					if (search_results.universe_map.has(JSON.stringify(planet.coordinate))) {
+					if (search_results.universe_map.has(coordToString(planet.coordinate))) {
 						has = true;
 					} else {
 						has = false;
