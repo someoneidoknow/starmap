@@ -74,7 +74,11 @@
 		const hexMatch = /^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 		if (hexMatch.test(v)) {
 			let h = v.replace('#', '').toLowerCase();
-			if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+			if (h.length === 3)
+				h = h
+					.split('')
+					.map((c) => c + c)
+					.join('');
 			return '#' + h;
 		}
 		const rgbMatch = /^rgb\s*\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/i;
@@ -101,7 +105,9 @@
 		if (typeof window !== 'undefined') {
 			await import('vanilla-colorful/hex-color-picker.js');
 			colorPickerReady = true;
-			const updateMaxH = () => { spMaxHeight = window.innerHeight - 16; };
+			const updateMaxH = () => {
+				spMaxHeight = window.innerHeight - 16;
+			};
 			updateMaxH();
 			window.addEventListener('resize', updateMaxH);
 			if (formEl) {
@@ -113,10 +119,12 @@
 			}
 		}
 	});
-	
+
 	onDestroy(() => {
 		if (typeof window !== 'undefined') {
-			window.removeEventListener('resize', () => { spMaxHeight = window.innerHeight - 16; });
+			window.removeEventListener('resize', () => {
+				spMaxHeight = window.innerHeight - 16;
+			});
 		}
 		if (ro && formEl) ro.disconnect();
 	});
@@ -249,10 +257,15 @@
 					></hex-color-picker>
 				{/if}
 				<div class="color-sim">
-							<label class="field">
-								<span class="label">Manual color</span>
-								<input class="input" bind:value={color_input} on:input={color_text_oninput} placeholder="#ff8800 or rgb(255,136,0)" />
-							</label>
+					<label class="field">
+						<span class="label">Manual color</span>
+						<input
+							class="input"
+							bind:value={color_input}
+							on:input={color_text_oninput}
+							placeholder="#ff8800 or rgb(255,136,0)"
+						/>
+					</label>
 					<label class="field">
 						<span class="label"
 							>Color tolerance {color_similarity}% {color_similarity === 0 ? '(off)' : ''}</span
@@ -419,33 +432,33 @@
 			<div class="sub">
 				<h3>Temperature (−300 to 300)</h3>
 				<div class="unscaled">
-				<RangeSlider
-					min={-300}
-					max={300}
-					values={temperature_range}
-					range
-					on:change={(e) => {
-						temperature_range = e.detail.values;
-						run();
-					}}
-					class="rs"
-				/>
+					<RangeSlider
+						min={-300}
+						max={300}
+						values={temperature_range}
+						range
+						on:change={(e) => {
+							temperature_range = e.detail.values;
+							run();
+						}}
+						class="rs"
+					/>
 				</div>
 			</div>
 			<div class="sub">
 				<h3>Gravity (0g to 300g)</h3>
 				<div class="unscaled">
-				<RangeSlider
-					min={0}
-					max={300}
-					values={gravity_range}
-					range
-					on:change={(e) => {
-						gravity_range = e.detail.values;
-						run();
-					}}
-					class="rs"
-				/>
+					<RangeSlider
+						min={0}
+						max={300}
+						values={gravity_range}
+						range
+						on:change={(e) => {
+							gravity_range = e.detail.values;
+							run();
+						}}
+						class="rs"
+					/>
 				</div>
 			</div>
 		</section>
@@ -647,14 +660,36 @@
 	}
 
 	.pill-wrap {
-		display: flex;
-		flex-wrap: wrap;
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
 		gap: 0.4rem;
+	}
+	.pill-wrap .tri-pill {
+		width: 100%;
+		justify-content: flex-start;
+	}
+	.form.md .pill-wrap {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+	.form.sm .pill-wrap {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+	.form.xs .pill-wrap {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
 	.star-grid {
 		display: grid;
-		grid-template-columns: repeat(2, 1fr);
+		grid-template-columns: repeat(3, 1fr);
 		gap: 0.3rem;
+	}
+	.form.md .star-grid {
+		grid-template-columns: repeat(3, 1fr);
+	}
+	.form.sm .star-grid {
+		grid-template-columns: repeat(3, 1fr);
+	}
+	.form.xs .star-grid {
+		grid-template-columns: repeat(2, 1fr);
 	}
 	.tri-pill {
 		display: inline-flex;
@@ -702,7 +737,7 @@
 	}
 	.res-tri {
 		display: grid;
-		grid-template-columns: minmax(0,5.8rem) 1fr;
+		grid-template-columns: minmax(0, 5.8rem) 1fr;
 		align-items: center;
 		gap: 0.45rem;
 		min-width: 0;
