@@ -19,6 +19,29 @@
 
 	$: resourceEntries = info.Resources ? Object.entries(info.Resources) : [];
 
+	const resourceColors: Record<string, string> = {
+		Iron: "#635F62",
+		Copper: "#DA8541",
+		Coal: "#1B2A35",
+		Lead: "#43475A",
+		Titanium: "#BBB3B2",
+		Uranium: "#2BA123",
+		Jade: "#55911D",
+		Gold: "#EFB838",
+		Diamond: "#98C2DB",
+		Beryllium: "#B9C4B1",
+		Aluminum: "#CACBD1"
+	};
+
+	function getTextColor(bgColor: string): string {
+		const r = parseInt(bgColor.slice(1, 3), 16);
+		const g = parseInt(bgColor.slice(3, 5), 16);
+		const b = parseInt(bgColor.slice(5, 7), 16);
+	
+		const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+		return luminance > 0.5 ? '#000000' : '#ffffff';
+	}
+
 	function copyCoordinates() {
 		const coords = `${selected.x}, ${selected.y}, ${selected.z}, ${selected.w}`;
 		navigator.clipboard.writeText(coords);
@@ -88,9 +111,16 @@
 		{#if resourceEntries.length}
 			<li class="resources">
 				<strong>Resources:</strong>
-				<ul>
-					{#each resourceEntries as [mat, qty] (mat)}<li>{mat}: {qty}</li>{/each}
-				</ul>
+				<div class="resource-chips">
+					{#each resourceEntries as [mat, qty] (mat)}
+						<span 
+							class="resource-chip" 
+							style="background-color: {resourceColors[mat] || '#666'}; color: {getTextColor(resourceColors[mat] || '#666')}"
+						>
+							{mat}
+						</span>
+					{/each}
+				</div>
 			</li>
 		{/if}
 	</ul>
@@ -151,9 +181,20 @@
 		border: 1px solid var(--green-4);
 		border-radius: calc(0.2rem * var(--ui-scale));
 	}
-	.resources ul {
-		list-style-type: disc;
-		margin: calc(0.25rem * var(--ui-scale)) 0 0 calc(1.2rem * var(--ui-scale));
-		padding: 0;
+	.resource-chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: calc(0.35rem * var(--ui-scale));
+		margin-top: calc(0.4rem * var(--ui-scale));
+		max-width: calc(300px * var(--ui-scale));
+	}
+	.resource-chip {
+		border-radius: calc(0.3rem * var(--ui-scale));
+		padding: calc(0.2rem * var(--ui-scale)) calc(0.5rem * var(--ui-scale));
+		font-size: calc(0.8rem * var(--ui-scale));
+		font-weight: 500;
+		white-space: nowrap;
+		border: 1px solid rgba(0, 0, 0, 0.2);
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 	}
 </style>
