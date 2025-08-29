@@ -152,11 +152,6 @@ export enum SearchType {
 	EndsWith
 }
 
-export type Player = {
-	id: number;
-	userid: number;
-	username: string;
-};
 
 export type AtlasFrame = {
 	x: number;
