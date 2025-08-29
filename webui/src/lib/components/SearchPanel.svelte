@@ -520,11 +520,18 @@
 	.form.md .res-grid {
 		grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
 	}
+	.form.sm .res-tri {
+		grid-template-columns: minmax(0, 5.5rem) 1fr;
+	}
+	.form.sm .res-name {
+		white-space: nowrap;
+	}
 	.form.xs .res-tri {
 		grid-template-columns: 1fr;
 	}
 	.form.xs .res-name {
 		font-size: 0.78rem;
+		white-space: normal;
 	}
 	.field {
 		display: grid;
@@ -636,17 +643,21 @@
 	.res-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
-		gap: 0.4rem 0.6rem;
+		gap: 0.6rem 0.8rem;
 	}
 	.res-tri {
 		display: grid;
-		grid-template-columns: 7rem 1fr;
+		grid-template-columns: minmax(0,5.8rem) 1fr;
 		align-items: center;
-		gap: 0.4rem;
+		gap: 0.45rem;
+		min-width: 0;
 	}
 	.res-name {
 		opacity: 0.9;
 		font-size: 0.9rem;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	:global(.rs .range-slider__track) {
