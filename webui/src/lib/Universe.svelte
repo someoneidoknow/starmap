@@ -65,6 +65,7 @@
 	const resLevels = [2, 1, 0.5];
 	let resIndex = 0;
 	let resButtonText = 'res x2';
+	let currentPixelRatio = window.devicePixelRatio;
 	function applyResolution() {
 		if (!app) return;
 		const mult = resLevels[resIndex];
@@ -72,6 +73,7 @@
 		app.renderer.resize(app.renderer.width, app.renderer.height);
 		resButtonText = `res x${mult}`;
 		setCookie('universe_res_mult', String(mult), 365);
+		currentPixelRatio = window.devicePixelRatio;
 	}
 	function cycleResolution() {
 		resIndex = (resIndex + 1) % resLevels.length;
@@ -191,6 +193,7 @@
 		});
 		container.appendChild(app.canvas);
 		resButtonText = `res x${resLevels[resIndex]}`;
+		currentPixelRatio = window.devicePixelRatio;
 
 		const gradCanvas = document.createElement('canvas');
 		gradCanvas.width = gradCanvas.height = 64;
@@ -349,7 +352,13 @@
 		}
 		centerView();
 
-		const onResize = () => centerView();
+		const onResize = () => {
+			centerView();
+			if (Math.abs(currentPixelRatio - window.devicePixelRatio) > 0.01) {
+				currentPixelRatio = window.devicePixelRatio;
+				applyResolution();
+			}
+		};
 		window.addEventListener('resize', onResize);
 
 		const onMouseDown = (e: MouseEvent) => {
@@ -879,6 +888,11 @@
 			const now = performance.now();
 			const delta_time = (now - previous_time) / 1000;
 			previous_time = now;
+
+			if (Math.abs(currentPixelRatio - window.devicePixelRatio) > 0.01) {
+				currentPixelRatio = window.devicePixelRatio;
+				applyResolution();
+			}
 
 			if (Math.abs(scale - targetScale) > 1e-4) {
 				scale += (targetScale - scale) * (1 - Math.pow(zoomLerp, delta_time * 30));
