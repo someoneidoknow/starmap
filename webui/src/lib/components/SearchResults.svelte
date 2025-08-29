@@ -166,7 +166,7 @@
 	}
 </script>
 
-<Window bind:left bind:top bind:width bind:height collapsible={true} minWidth={480}>
+<Window bind:left bind:top bind:width bind:height collapsible={true} minWidth={480} maxWidth={900}>
 	<span slot="title">Results</span>
 
 	<div class="toolbar">

@@ -49,9 +49,6 @@
 		if (!collapsible) return;
 		if (!collapsed) {
 			savedHeight = height ?? panelEl?.offsetHeight ?? 0;
-			if (width === undefined && panelEl) {
-				width = panelEl.offsetWidth;
-			}
 		} else {
 			if (savedHeight) height = savedHeight;
 		}
@@ -187,7 +184,7 @@
 	class="panel"
 	style:left={`${left}px`}
 	style:top={`${top}px`}
-	style:width={width ? width + 'px' : undefined}
+	style:width={(width ?? 620) + 'px'}
 	style:min-width={minWidth ? minWidth + 'px' : undefined}
 	style:max-width={maxWidth ? maxWidth + 'px' : undefined}
 	style:height={collapsed ? headerHeight + 'px' : height ? height + 'px' : undefined}
