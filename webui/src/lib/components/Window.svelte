@@ -39,6 +39,7 @@
 	function dragMove(e: MouseEvent) {
 		left = baseL + e.clientX - startX;
 		top = baseT + e.clientY - startY;
+		enforceBounds();
 	}
 	function dragEnd() {
 		window.removeEventListener('mousemove', dragMove);
@@ -144,10 +145,31 @@
 				const mh = maxHeight;
 				if (mh !== undefined && panelEl.scrollHeight > mh) height = mh;
 			}
+			enforceBounds();
 		});
+		if (typeof window !== 'undefined') {
+			const onR = () => enforceBounds();
+			window.addEventListener('resize', onR);
+			return () => window.removeEventListener('resize', onR);
+		}
 	});
 
 	$: if (headerEl) headerHeight = headerEl.offsetHeight;
+
+	function enforceBounds() {
+		if (typeof window === 'undefined') return;
+		const vw = window.innerWidth;
+		const vh = window.innerHeight;
+		const panelW = (width ?? panelEl?.offsetWidth) || 0;
+		const minVisibleX = 80;
+		const minLeft = -(panelW - minVisibleX);
+		const maxLeft = vw - minVisibleX;
+		if (left < minLeft) left = minLeft;
+		if (left > maxLeft) left = maxLeft;
+		if (top < 0) top = 0;
+		const maxTop = vh - 40;
+		if (top > maxTop) top = maxTop;
+	}
 </script>
 
 <div
