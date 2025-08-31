@@ -169,6 +169,22 @@
 			copiedSet = new Set(copiedSet);
 		}, 1200);
 	}
+
+	var linkCopiedSet = new Set<string>();
+	function copyLink(coordText: string, e: Event) {
+		e.stopPropagation();
+		const current = new URL(window.location.href);
+		const params = current.searchParams;
+		params.delete('c');
+		let other = '';
+		params.forEach((v, k) => { other += (other ? '&' : '') + encodeURIComponent(k) + '=' + encodeURIComponent(v); });
+		const base = current.origin + current.pathname;
+		const url = base + '?' + (other ? other + '&' : '') + 'c=' + coordText + (current.hash || '');
+		navigator.clipboard.writeText(url);
+		linkCopiedSet.add(coordText);
+		linkCopiedSet = new Set(linkCopiedSet);
+		setTimeout(() => { linkCopiedSet.delete(coordText); linkCopiedSet = new Set(linkCopiedSet); }, 1200);
+	}
 </script>
 
 <Window bind:left bind:top bind:width bind:height collapsible={true} minWidth={480} maxWidth={900}>
@@ -246,6 +262,11 @@
 							>
 						</button>
 					{/if}
+					{#if linkCopiedSet.has(fmtCoord(item.coordinate))}
+						<button class="copy-btn" on:click={(e)=>copyLink(fmtCoord(item.coordinate), e)} aria-label="Link copied"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="ic fade"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg></button>
+					{:else}
+						<button class="copy-btn" on:click={(e)=>copyLink(fmtCoord(item.coordinate), e)} aria-label="Copy link"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="ic"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" /></svg></button>
+					{/if}
 				</div>
 			</VirtualList>
 		{/if}
@@ -307,6 +328,11 @@
 						>
 					</button>
 				{/if}
+				{#if linkCopiedSet.has(fmtCoord(item.coordinate))}
+					<button class="copy-btn" on:click={(e)=>copyLink(fmtCoord(item.coordinate), e)} aria-label="Link copied"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="ic fade"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg></button>
+				{:else}
+					<button class="copy-btn" on:click={(e)=>copyLink(fmtCoord(item.coordinate), e)} aria-label="Copy link"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="ic"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" /></svg></button>
+				{/if}
 			</div>
 		</VirtualList>
 	{/if}
@@ -359,10 +385,10 @@
 		box-sizing: border-box;
 	}
 	.planet-row {
-		grid-template-columns: 2rem 7rem 3.4rem 1fr auto;
+		grid-template-columns: 2rem 7rem 3.4rem 1fr auto auto;
 	}
 	.star-row {
-		grid-template-columns: 2rem 6.8rem 1fr 2.2rem auto;
+		grid-template-columns: 2rem 6.8rem 1fr 2.2rem auto auto;
 	}
 	.row:hover {
 		border-color: var(--green-4);
