@@ -67,6 +67,15 @@
 	let resIndex = 0;
 	let resButtonText = 'res x2';
 	let currentPixelRatio = window.devicePixelRatio;
+
+	let firstFrameDone = false;
+	let firstFrameResolve: (() => void) | null = null;
+	const firstFramePromise: Promise<void> = new Promise((resolve) => {
+		firstFrameResolve = resolve;
+	});
+	export function waitForFirstFrame(): Promise<void> {
+		return firstFramePromise;
+	}
 	function applyResolution() {
 		if (!app) return;
 		const mult = resLevels[resIndex];
@@ -111,6 +120,7 @@
 	}
 
 	export function focusOnWorldCoords(x: number, y: number, z = 0, w = 0, newScale?: number) {
+		console.log(`Focusing on world coords: ${x}, ${y}, ${z}, ${w}, ${newScale}`);
 		if (!universe || !app) return null;
 
 		if (newScale !== undefined) {
@@ -886,6 +896,10 @@
 		}
 
 		app.ticker.add(() => {
+			if (!firstFrameDone) {
+				firstFrameDone = true;
+				firstFrameResolve?.();
+			}
 			const now = performance.now();
 			const delta_time = (now - previous_time) / 1000;
 			previous_time = now;
