@@ -10,7 +10,7 @@ let universeCache: Record<string, UniverseEntry> | null = null;
 let atlasCache: AtlasData | null = null;
 let atlasImageCache: any = null;
 
-const ASSET_BASE = 'http://127.0.0.1:4000/assets';
+const ASSET_BASE = 'http://127.0.0.1:3000/assets';
 
 function decodeCString(buf: Uint8Array, offset: number): [string, number] {
     let end = offset;
