@@ -11,6 +11,7 @@
 	import { loadUniverse } from '$lib/util/assets';
 	let universe_data: any = null;
 	let raw_data: any = null;
+	let internalHashUpdate = false;
 
 	let initialSelected: Coordinate | null = null;
 	if (typeof window !== 'undefined' && window.location.hash) {
@@ -50,6 +51,7 @@
 			universe_data = await parseUniverse(raw_data);
 			await applyInitialSelection();
 			const onHash = () => {
+				if (internalHashUpdate) { internalHashUpdate = false; return; }
 				if (!window.location.hash) return;
 				const parts = window.location.hash.slice(1).split(',').map(s => parseInt(s.trim()));
 				if (parts.length === 4 && parts.every(n => !isNaN(n))) {
@@ -119,7 +121,13 @@
 		place(v);
 	});
 	onDestroy(unsub);
-	$: if (typeof window !== 'undefined') window.location.hash = hashKey(selected);
+	$: if (typeof window !== 'undefined') {
+		const newHash = hashKey(selected);
+		if (window.location.hash.slice(1) !== newHash) {
+			internalHashUpdate = true;
+			window.location.hash = newHash;
+		}
+	}
 
 	function jump(e: CustomEvent<{ x: number; y: number; z: number; w: number }>) {
 		selected = e.detail;
