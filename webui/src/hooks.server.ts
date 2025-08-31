@@ -30,7 +30,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 	if (isDiscord(ua)) {
 	const coord = url.searchParams.get('c');
         let title = 'Starmap';
-        let desc = 'Gab starmap';
+        let desc = 'Empty sector';
         let image = url.origin + '/favicon.svg';
 		if (coord) {
 			const entry = await getUniverseEntry(coord.replace(/\s+/g, ''));
