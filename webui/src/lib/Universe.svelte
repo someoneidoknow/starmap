@@ -994,20 +994,6 @@
 			}
 		});
 
-		onDestroy(() => {
-			window.removeEventListener('resize', onResize);
-			app.canvas.removeEventListener('mousedown', onMouseDown);
-			app.canvas.removeEventListener('mousemove', onMouseMove);
-			app.canvas.removeEventListener('mouseup', onMouseUp);
-			app.canvas.removeEventListener('mouseleave', onMouseLeave);
-			app.canvas.removeEventListener('wheel', onWheel);
-			app.canvas.removeEventListener('touchstart', onTouchStart);
-			app.canvas.removeEventListener('touchmove', onTouchMove);
-			app.canvas.removeEventListener('touchend', onTouchEnd);
-			app.canvas.removeEventListener('touchcancel', onTouchEnd);
-
-			app.destroy(true, { children: true });
-		});
 	});
 </script>
 
