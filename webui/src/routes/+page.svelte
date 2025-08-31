@@ -17,7 +17,16 @@
 		if (!str) return null;
 		const parts = str.split(',').map(s => parseInt(s.trim()));
 		if (parts.length !== 4 || parts.some(isNaN)) return null;
-		return { x: parts[0], y: parts[1], z: parts[2], w: parts[3] };
+		return clampCoord({ x: parts[0], y: parts[1], z: parts[2], w: parts[3] });
+	}
+
+	function clampCoord(c: Coordinate): Coordinate {
+		return {
+			x: Math.min(100, Math.max(-100, c.x)),
+			y: Math.min(100, Math.max(-100, c.y)),
+			z: Math.min(10, Math.max(-10, c.z)),
+			w: Math.min(10, Math.max(-10, c.w))
+		};
 	}
 
 	let initialSelected: Coordinate | null = null;
@@ -27,6 +36,7 @@
 	}
 
 	function focusFromEntry(c: Coordinate) {
+		c = clampCoord(c);
 		const entry: any = raw_data ? (raw_data as any)[key(c)] : null;
 		let zoom = 100;
 		let z = c.z;
@@ -150,13 +160,13 @@
 	}
 
 	function jump(e: CustomEvent<{ x: number; y: number; z: number; w: number }>) {
-		selected = e.detail;
+		selected = clampCoord(e.detail);
 		universe?.focusOnWorldCoords(selected.x, selected.y, selected.z, selected.w, 1000);
 	}
 
 	function pick(e: CustomEvent<{ x: number; y: number; z: number; w: number }>) {
 		const c = e.detail;
-		selected = scale < planetShowAt ? { x: c.x, y: c.y, z: 0, w: 0 } : c;
+		selected = clampCoord(scale < planetShowAt ? { x: c.x, y: c.y, z: 0, w: 0 } : c);
 	}
 	$: selectorTune =
 		info.Type === 'Star' || info.Type === 'BlackHole' || info.Type === 'AsteroidField' ? 0.2 : 0.07;
