@@ -67,6 +67,11 @@
 		(window as any).focusOnWorldCoords?.(s.coordinate.x, s.coordinate.y, 0, 0, 80);
 	}
 
+	function selectStar(s: Star) {
+		focusStar(s);
+		dispatch('select', s.coordinate);
+	}
+
 	$: listPlanets = search_results ? planets() : [];
 	$: listStars = search_results ? stars() : [];
 
@@ -252,8 +257,8 @@
 				role="button"
 				tabindex="0"
 				class="row star-row"
-				on:click={() => focusStar(item)}
-				on:keydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && focusStar(item)}
+				on:click={() => selectStar(item)}
+				on:keydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && selectStar(item)}
 			>
 				{#key JSON.stringify(starToInfo(item))}
 					<PlanetIcon info={starToInfo(item)} size={32} />
