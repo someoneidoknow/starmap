@@ -39,8 +39,8 @@ export function searchUniverse(universe: UniverseData, opts: SearchOptions): Sea
 	const rings = opts.rings ?? 'any';
 	const atmosphere = opts.atmosphere ?? 'any';
 	const tidallyLocked = opts.tidallyLocked ?? 'any';
-	const temperatureRange: [number, number] = opts.temperatureRange ?? [-300, 300];
-	const gravityRange: [number, number] = opts.gravityRange ?? [0, 300];
+	const temperatureRange: [number, number] = opts.temperatureRange ?? [-350, 350];
+	const gravityRange: [number, number] = opts.gravityRange ?? [0, 350];
 	const resources = opts.resources ?? [];
 	const resourcesTri = opts.resourcesTri ?? {};
 	const color = (opts.color ?? '').trim();
@@ -61,10 +61,10 @@ export function searchUniverse(universe: UniverseData, opts: SearchOptions): Sea
 		rings === 'any' &&
 		atmosphere === 'any' &&
 		tidallyLocked === 'any' &&
-		temperatureRange[0] === -300 &&
-		temperatureRange[1] === 300 &&
+		temperatureRange[0] === -350 &&
+		temperatureRange[1] === 350 &&
 		gravityRange[0] === 0 &&
-		gravityRange[1] === 300 &&
+		gravityRange[1] === 350 &&
 		color === '' &&
 		colorSimilarity === 0 &&
 		earthlikesInSystem === 'any' &&

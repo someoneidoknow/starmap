@@ -52,8 +52,8 @@
 	let tidal_filter: number = 0; // 0 = any, 1 = yes, -1 = no
 	let earthlikes_filter: number = 0; // 0 = any, 1 = yes, -1 = no
 
-	let temperature_range: [number, number] = [-300, 300];
-	let gravity_range: [number, number] = [0, 300];
+	let temperature_range: [number, number] = [-350, 350];
+	let gravity_range: [number, number] = [0, 350];
 
 	let resource_tri: Record<number, number> = {};
 	for (const r of allResources) resource_tri[r] = 0;
@@ -456,11 +456,11 @@
 
 		<section class="section compact2">
 			<div class="sub">
-				<h3>Temperature (−300 to 300)</h3>
+				<h3>Temperature (-350 to 350)</h3>
 				<div class="unscaled">
 					<RangeSlider
-						min={-300}
-						max={300}
+						min={-350}
+						max={350}
 						values={temperature_range}
 						range
 						on:change={(e) => {
@@ -472,11 +472,11 @@
 				</div>
 			</div>
 			<div class="sub">
-				<h3>Gravity (0g to 300g)</h3>
+				<h3>Gravity (0g to 350g)</h3>
 				<div class="unscaled">
 					<RangeSlider
 						min={0}
-						max={300}
+						max={350}
 						values={gravity_range}
 						range
 						on:change={(e) => {
