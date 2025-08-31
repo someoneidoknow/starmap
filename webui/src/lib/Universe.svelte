@@ -76,6 +76,10 @@
 	export function waitForFirstFrame(): Promise<void> {
 		return firstFramePromise;
 	}
+	if (typeof window !== 'undefined') {
+		(window as any).waitForFirstFrame = waitForFirstFrame;
+	}
+
 	function applyResolution() {
 		if (!app) return;
 		const mult = resLevels[resIndex];

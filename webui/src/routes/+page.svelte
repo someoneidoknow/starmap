@@ -5,17 +5,49 @@
 	import InfoPanel from '$lib/components/InfoPanel.svelte';
 	import SearchPanel from '$lib/components/SearchPanel.svelte';
 	import SearchResults from '$lib/components/SearchResults.svelte';
-	import { onDestroy, onMount } from 'svelte';
+	import { onDestroy, onMount, tick } from 'svelte';
 	import { parseUniverse } from '$lib/util/universe';
 	import type { Coordinate, SearchResult, SolarSystem } from '$lib/util/types';
 	import { loadUniverse } from '$lib/util/assets';
 	let universe_data: any = null;
 	let raw_data: any = null;
 
+	let initialSelected: Coordinate | null = null;
+	if (typeof window !== 'undefined' && window.location.hash) {
+		const hash = window.location.hash.slice(1);
+		const parts = hash.split(',').map((s) => parseInt(s.trim()));
+		if (parts.length === 4 && parts.every((n) => !isNaN(n))) {
+			initialSelected = { x: parts[0], y: parts[1], z: parts[2], w: parts[3] };
+		}
+	}
+
 	onMount(async () => {
 		try {
 			raw_data = await loadUniverse();
 			universe_data = await parseUniverse(raw_data);
+			await tick();
+			await window.waitForFirstFrame();
+			if (initialSelected) {
+				selected = initialSelected;
+				let zoom = 100;
+				console.log(info);
+				if (info) {
+					if (info.Type === 'Planet') {
+						zoom = 700;
+					} else if (info.Type === 'Star' || info.Type === 'BlackHole' || info.Type === 'AsteroidField') {
+						zoom = 80;
+					}
+				} else {
+					console.log("entry not available")
+				}
+				(window as any).focusOnWorldCoords?.(
+					selected.x,
+					selected.y,
+					selected.z,
+					selected.w,
+					zoom
+				);
+			}
 		} catch (error) {
 			console.error('Failed to load universe data:', error);
 		}
@@ -25,7 +57,7 @@
 	const planetShowAt = 96;
 
 	let universe: any;
-	let selected: Coordinate = { x: 0, y: 0, z: 0, w: 0 };
+	let selected: Coordinate = initialSelected ?? { x: 0, y: 0, z: 0, w: 0 };
 
 	let screenX = 0,
 		screenY = 0,
@@ -38,6 +70,9 @@
 
 	function key({ x, y, z, w }: { x: number; y: number; z: number; w: number }) {
 		return `${x}, ${y}, ${z}, ${w}`;
+	}
+	function hashKey({ x, y, z, w }: { x: number; y: number; z: number; w: number }) {
+		return `${x},${y},${z},${w}`;
 	}
 	$: info = raw_data ? (raw_data as any)[key(selected)] ?? {} : {};
 	$: hasInfo = Object.keys(info).length > 0;
@@ -72,6 +107,7 @@
 		place(v);
 	});
 	onDestroy(unsub);
+	$: if (typeof window !== 'undefined') window.location.hash = hashKey(selected);
 
 	function jump(e: CustomEvent<{ x: number; y: number; z: number; w: number }>) {
 		selected = e.detail;
@@ -141,6 +177,7 @@
 	on:select={(e) => {
 		selected = e.detail;
 		placed = false;
+		universe?.focusOnWorldCoords(selected.x, selected.y, selected.z, selected.w, 1000);
 	}}
 />
 
