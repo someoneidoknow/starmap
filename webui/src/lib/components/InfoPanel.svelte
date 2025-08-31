@@ -138,9 +138,17 @@
 		color: var(--text);
 		border: none;
 		padding: 0;
-		margin-left: 0.5em;
+		position: relative;
+  		top: 3px;
+		width: calc(1.5em * var(--ui-scale));
+		height: calc(1.5em * var(--ui-scale));
 		cursor: pointer;
 	}
+	.copy-button svg {
+	  	width: 100%;
+	  	height: 100%;
+	}
+
 	.size-6 {
 		width: calc(1em * var(--ui-scale));
 		height: calc(1em * var(--ui-scale));
