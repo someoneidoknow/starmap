@@ -39,7 +39,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 				else if (entry.Type === 'Star') title = `${entry.SubType} Star`;
 				const escape = (s: string) => s.replace(/["&<>]/g, c => ({ '"': '&quot;', '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c] as string));
 				if (entry.Type === 'Planet') {
-					desc = escape(`${coord} • ${entry.SubType || 'Planet'}`);
+					desc = escape(`${coord} • ${entry.SubType || 'Planet'} • ${entry.RandomMaterial || 'None'}`);
 				} else if (entry.Type === 'Star') {
 					desc = escape(`${coord} • ${entry.SubType || 'Star'}`);
 				} else {
