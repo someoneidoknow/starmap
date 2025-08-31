@@ -11,15 +11,19 @@
 	import { loadUniverse } from '$lib/util/assets';
 	let universe_data: any = null;
 	let raw_data: any = null;
-	let internalHashUpdate = false;
+	let internalUpdate = false;
+
+	function parseCoordString(str: string | null): Coordinate | null {
+		if (!str) return null;
+		const parts = str.split(',').map(s => parseInt(s.trim()));
+		if (parts.length !== 4 || parts.some(isNaN)) return null;
+		return { x: parts[0], y: parts[1], z: parts[2], w: parts[3] };
+	}
 
 	let initialSelected: Coordinate | null = null;
-	if (typeof window !== 'undefined' && window.location.hash) {
-		const hash = window.location.hash.slice(1);
-		const parts = hash.split(',').map((s) => parseInt(s.trim()));
-		if (parts.length === 4 && parts.every((n) => !isNaN(n))) {
-			initialSelected = { x: parts[0], y: parts[1], z: parts[2], w: parts[3] };
-		}
+	if (typeof window !== 'undefined') {
+		const u = new URL(window.location.href);
+		initialSelected = parseCoordString(u.searchParams.get('coord')) || parseCoordString(u.hash ? u.hash.slice(1) : null);
 	}
 
 	function focusFromEntry(c: Coordinate) {
@@ -50,18 +54,14 @@
 			raw_data = await loadUniverse();
 			universe_data = await parseUniverse(raw_data);
 			await applyInitialSelection();
-			const onHash = () => {
-				if (internalHashUpdate) { internalHashUpdate = false; return; }
-				if (!window.location.hash) return;
-				const parts = window.location.hash.slice(1).split(',').map(s => parseInt(s.trim()));
-				if (parts.length === 4 && parts.every(n => !isNaN(n))) {
-					const next: Coordinate = { x: parts[0], y: parts[1], z: parts[2], w: parts[3] };
-					if (key(next) !== key(selected)) {
-						focusFromEntry(next);
-					}
-				}
+			const handleLocation = () => {
+				if (internalUpdate) { internalUpdate = false; return; }
+				const u = new URL(window.location.href);
+				const next = parseCoordString(u.searchParams.get('coord')) || (!u.searchParams.get('coord') ? parseCoordString(u.hash ? u.hash.slice(1) : null) : null);
+				if (next && key(next) !== key(selected)) focusFromEntry(next);
 			};
-			window.addEventListener('hashchange', onHash);
+			window.addEventListener('hashchange', handleLocation);
+			window.addEventListener('popstate', handleLocation);
 		} catch (error) {
 			console.error('Failed to load universe data:', error);
 		}
@@ -122,10 +122,17 @@
 	});
 	onDestroy(unsub);
 	$: if (typeof window !== 'undefined') {
-		const newHash = hashKey(selected);
-		if (window.location.hash.slice(1) !== newHash) {
-			internalHashUpdate = true;
-			window.location.hash = newHash;
+		const coordStr = hashKey(selected);
+		const current = new URL(window.location.href);
+		if (current.searchParams.get('coord') !== coordStr) {
+			const params = current.searchParams;
+			params.delete('coord');
+			let other = '';
+			params.forEach((v, k) => { other += (other ? '&' : '') + encodeURIComponent(k) + '=' + encodeURIComponent(v); });
+			const base = current.origin + current.pathname;
+			const newUrl = base + '?' + (other ? other + '&' : '') + 'coord=' + coordStr + (current.hash || '');
+			internalUpdate = true;
+			history.replaceState(history.state, '', newUrl);
 		}
 	}
 
