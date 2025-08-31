@@ -123,16 +123,29 @@
 	onDestroy(unsub);
 	$: if (typeof window !== 'undefined') {
 		const coordStr = hashKey(selected);
-		const current = new URL(window.location.href);
-		if (current.searchParams.get('c') !== coordStr) {
-			const params = current.searchParams;
-			params.delete('c');
-			let other = '';
-			params.forEach((v, k) => { other += (other ? '&' : '') + encodeURIComponent(k) + '=' + encodeURIComponent(v); });
-			const base = current.origin + current.pathname;
-			const newUrl = base + '?' + (other ? other + '&' : '') + 'c=' + coordStr + (current.hash || '');
-			internalUpdate = true;
-			history.replaceState(history.state, '', newUrl);
+		if (coordStr !== '0,0,0,0') {
+			const current = new URL(window.location.href);
+			if (current.searchParams.get('c') !== coordStr) {
+				const params = current.searchParams;
+				params.delete('c');
+				let other = '';
+				params.forEach((v, k) => { other += (other ? '&' : '') + encodeURIComponent(k) + '=' + encodeURIComponent(v); });
+				const base = current.origin + current.pathname;
+				const newUrl = base + '?' + (other ? other + '&' : '') + 'c=' + coordStr + (current.hash || '');
+				internalUpdate = true;
+				history.replaceState(history.state, '', newUrl);
+			}
+		} else {
+			const current = new URL(window.location.href);
+			if (current.searchParams.get('c')) {
+				current.searchParams.delete('c');
+				let other = '';
+				current.searchParams.forEach((v, k) => { other += (other ? '&' : '') + encodeURIComponent(k) + '=' + encodeURIComponent(v); });
+				const base = current.origin + current.pathname;
+				const newUrl = other ? base + '?' + other + (current.hash || '') : base + (current.hash || '');
+				internalUpdate = true;
+				history.replaceState(history.state, '', newUrl);
+			}
 		}
 	}
 
