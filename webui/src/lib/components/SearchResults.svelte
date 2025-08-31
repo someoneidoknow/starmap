@@ -86,10 +86,6 @@
 		containerHeight = Math.max(50, height - reservedSpace);
 	}
 
-	$: if (search_results) {
-		if (listPlanets.length === 0 && listStars.length > 0 && !showStars) showStars = true;
-		else if (listStars.length === 0 && listPlanets.length > 0 && showStars) showStars = false;
-	}
 
 	$: if (browser && height) updateContainerHeight();
 
