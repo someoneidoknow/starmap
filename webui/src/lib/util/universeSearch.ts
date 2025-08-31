@@ -218,6 +218,7 @@ export function searchUniverse(universe: UniverseData, opts: SearchOptions): Sea
 				if (colorTolerance > 0) {
 					finalPlanets = finalPlanets.filter(p => colorDistMap!.get(p)! <= colorTolerance);
 				}
+				if (finalPlanets.length === 0) continue;
 			}
 
 			for (const planet of finalPlanets) {
