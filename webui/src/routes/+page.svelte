@@ -21,33 +21,46 @@
 		}
 	}
 
+	function focusFromEntry(c: Coordinate) {
+		const entry: any = raw_data ? (raw_data as any)[key(c)] : null;
+		let zoom = 100;
+		let z = c.z;
+		let w = c.w;
+		if (entry) {
+			if (entry.Type === 'Planet') zoom = 700;
+			else if (entry.Type === 'Star' || entry.Type === 'BlackHole' || entry.Type === 'AsteroidField') {
+				zoom = 80;
+			}
+		}
+		selected = c;
+		placed = false;
+		(window as any).focusOnWorldCoords?.(c.x, c.y, z, w, zoom);
+	}
+
+	async function applyInitialSelection() {
+		if (!initialSelected) return;
+		await tick();
+		await (window as any).waitForFirstFrame();
+		focusFromEntry(initialSelected);
+	}
+
 	onMount(async () => {
 		try {
 			raw_data = await loadUniverse();
 			universe_data = await parseUniverse(raw_data);
-			await tick();
-			await window.waitForFirstFrame();
-			if (initialSelected) {
-				selected = initialSelected;
-				let zoom = 100;
-				console.log(info);
-				if (info) {
-					if (info.Type === 'Planet') {
-						zoom = 700;
-					} else if (info.Type === 'Star' || info.Type === 'BlackHole' || info.Type === 'AsteroidField') {
-						zoom = 80;
+			await applyInitialSelection();
+			const onHash = () => {
+				if (!window.location.hash) return;
+				const parts = window.location.hash.slice(1).split(',').map(s => parseInt(s.trim()));
+				if (parts.length === 4 && parts.every(n => !isNaN(n))) {
+					const next: Coordinate = { x: parts[0], y: parts[1], z: parts[2], w: parts[3] };
+					if (key(next) !== key(selected)) {
+						focusFromEntry(next);
 					}
-				} else {
-					console.log("entry not available")
 				}
-				(window as any).focusOnWorldCoords?.(
-					selected.x,
-					selected.y,
-					selected.z,
-					selected.w,
-					zoom
-				);
-			}
+			};
+			window.addEventListener('hashchange', onHash);
+			onDestroy(() => window.removeEventListener('hashchange', onHash));
 		} catch (error) {
 			console.error('Failed to load universe data:', error);
 		}
