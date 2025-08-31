@@ -1,5 +1,3 @@
-import { readFile } from 'fs/promises';
-import path from 'node:path';
 import { ZSTDDecoder } from 'zstddec';
 import { decode } from '@msgpack/msgpack';
 import { createCanvas, loadImage } from '@napi-rs/canvas';
@@ -12,7 +10,7 @@ let universeCache: Record<string, UniverseEntry> | null = null;
 let atlasCache: AtlasData | null = null;
 let atlasImageCache: any = null;
 
-const STATIC_ASSETS_DIR = path.resolve(process.cwd(), 'static', 'assets');
+const ASSET_BASE = 'http://127.0.0.1:5173/assets';
 
 function decodeCString(buf: Uint8Array, offset: number): [string, number] {
     let end = offset;
@@ -78,25 +76,29 @@ function decodeUniverseGab(buf: Uint8Array): Record<string, UniverseEntry> {
 
 async function loadUniverseServer() {
     if (universeCache) return universeCache;
-    const file = await readFile(path.join(STATIC_ASSETS_DIR, 'Universe.gab.zst'));
+    const res = await fetch(`${ASSET_BASE}/Universe.gab.zst`);
+    if (!res.ok) throw new Error('universe fetch failed');
+    const file = new Uint8Array(await res.arrayBuffer());
     const dec = new ZSTDDecoder();
     await dec.init();
-    const raw = dec.decode(new Uint8Array(file), 16384 * 1024);
+    const raw = dec.decode(file, 16384 * 1024);
     universeCache = decodeUniverseGab(raw);
     return universeCache;
 }
 
 async function loadAtlasServer() {
     if (atlasCache && atlasImageCache) return { atlas: atlasCache, image: atlasImageCache };
-    const [atlasBuf, pngBuf] = await Promise.all([
-        readFile(path.join(STATIC_ASSETS_DIR, 'textures.msgpack.zst')),
-        readFile(path.join(STATIC_ASSETS_DIR, 'textures.png'))
+    const [atlasRes, pngRes] = await Promise.all([
+        fetch(`${ASSET_BASE}/textures.msgpack.zst`),
+        fetch(`${ASSET_BASE}/textures.png`)
     ]);
+    if (!atlasRes.ok || !pngRes.ok) throw new Error('atlas fetch failed');
+    const [atlasBufU8, pngBufU8] = await Promise.all([atlasRes.arrayBuffer(), pngRes.arrayBuffer()]);
     const dec = new ZSTDDecoder();
     await dec.init();
-    const decoded = dec.decode(new Uint8Array(atlasBuf), 16384);
+    const decoded = dec.decode(new Uint8Array(atlasBufU8), 16384);
     atlasCache = decode(decoded) as AtlasData;
-    const b64 = pngBuf.toString('base64');
+    const b64 = Buffer.from(pngBufU8).toString('base64');
     atlasImageCache = await loadImage('data:image/png;base64,' + b64);
     return { atlas: atlasCache, image: atlasImageCache };
 }
