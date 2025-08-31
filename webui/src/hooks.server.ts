@@ -8,14 +8,18 @@ function isDiscord(ua: string) { return DISCORD_MATCHERS.some((m) => ua.includes
 export const handle: Handle = async ({ event, resolve }) => {
 	const url = new URL(event.request.url);
 	const ua = (event.request.headers.get('user-agent') || '').toLowerCase();
+	console.log('[hooks] inbound', url.toString(), 'ua=', ua);
 
 	if (url.pathname === '/planet-preview.png') {
+		console.log('[hooks] planet-preview request');
 		const coord = url.searchParams.get('coord');
 		if (!coord) return new Response('coord query required', { status: 400 });
 		try {
 			const size = Math.min(1024, Math.max(64, parseInt(url.searchParams.get('size') || '512')));
+			console.log('[hooks] generating planet texture', coord, 'size', size);
 			const buf = await generatePlanetTexture(coord, size);
 			if (!buf) return new Response('not found', { status: 404 });
+			console.log('[hooks] generated planet texture ok', coord, 'bytes', buf.byteLength);
 			return new Response(new Uint8Array(buf), {
 				headers: {
 					'Content-Type': 'image/png',
@@ -23,17 +27,22 @@ export const handle: Handle = async ({ event, resolve }) => {
 				}
 			});
 		} catch (e: any) {
+			console.log('[hooks] planet-preview error', e);
 			return new Response('error generating image', { status: 500 });
 		}
 	}
 
 	if (isDiscord(ua)) {
+		console.log('[hooks] discord UA detected');
         const coord = url.searchParams.get('coord');
+		console.log('[hooks] discord coord param', coord);
         let title = 'Starmap';
         let desc = 'Gab starmap';
         let image = url.origin + '/favicon.svg';
 		if (coord) {
+			console.log('[hooks] fetching universe entry', coord);
 			const entry = await getUniverseEntry(coord);
+			console.log('[hooks] entry', entry ? 'found' : 'missing');
 			if (entry) {
 				if (entry.Type === 'Planet') title = entry.Name || `${entry.SubType} Planet`;
 				else if (entry.Type === 'Star') title = `${entry.SubType} Star`;
@@ -45,9 +54,12 @@ export const handle: Handle = async ({ event, resolve }) => {
 				} else {
 					desc = escape(`${coord} • ${entry.Type}`);
 				}
+				console.log('[hooks] meta title/desc', title, '/', desc);
 				image = `${url.origin}/planet-preview.png?coord=${encodeURIComponent(coord)}`;
+				console.log('[hooks] image url', image);
 			}
 		}
+		console.log('[hooks] sending discord HTML response');
 		const html = `<!doctype html><html lang="en"><head>
 <meta charset="utf-8" />
 <title>${title}</title>
@@ -65,6 +77,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 </head><body></body></html>`;
 		return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=300' } });
 	}
+	console.log('[hooks] normal resolve');
 
 	return resolve(event);
 };

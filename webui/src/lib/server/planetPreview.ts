@@ -11,6 +11,7 @@ let atlasCache: AtlasData | null = null;
 let atlasImageCache: any = null;
 
 const ASSET_BASE = 'http://127.0.0.1:3000/assets';
+console.log('[planetPreview] ASSET_BASE', ASSET_BASE);
 
 function decodeCString(buf: Uint8Array, offset: number): [string, number] {
     let end = offset;
@@ -76,6 +77,7 @@ function decodeUniverseGab(buf: Uint8Array): Record<string, UniverseEntry> {
 
 async function loadUniverseServer() {
     if (universeCache) return universeCache;
+    console.log('[planetPreview] fetching universe');
     const res = await fetch(`${ASSET_BASE}/Universe.gab.zst`);
     if (!res.ok) throw new Error('universe fetch failed');
     const file = new Uint8Array(await res.arrayBuffer());
@@ -83,11 +85,13 @@ async function loadUniverseServer() {
     await dec.init();
     const raw = dec.decode(file, 16384 * 1024);
     universeCache = decodeUniverseGab(raw);
+    console.log('[planetPreview] universe decoded entries', Object.keys(universeCache).length);
     return universeCache;
 }
 
 async function loadAtlasServer() {
     if (atlasCache && atlasImageCache) return { atlas: atlasCache, image: atlasImageCache };
+    console.log('[planetPreview] fetching atlas & texture');
     const [atlasRes, pngRes] = await Promise.all([
         fetch(`${ASSET_BASE}/textures.msgpack.zst`),
         fetch(`${ASSET_BASE}/textures.png`)
@@ -100,6 +104,7 @@ async function loadAtlasServer() {
     atlasCache = decode(decoded) as AtlasData;
     const b64 = Buffer.from(pngBufU8).toString('base64');
     atlasImageCache = await loadImage('data:image/png;base64,' + b64);
+    console.log('[planetPreview] atlas frames', Object.keys(atlasCache.frames).length);
     return { atlas: atlasCache, image: atlasImageCache };
 }
 
@@ -115,11 +120,13 @@ function tintImageData(data: { data: Uint8ClampedArray }, tint: [number, number,
 }
 
 export async function generatePlanetTexture(coordStr: string, _size = 96): Promise<Buffer | null> {
+    console.log('[planetPreview] generatePlanetTexture', coordStr);
     const universe = await loadUniverseServer();
     const parts = coordStr.split(',').map(s => parseInt(s.trim()));
     if (parts.length !== 4 || parts.some(n => Number.isNaN(n))) return null;
     const key = parts.join(', ');
     const entry = universe[key];
+    console.log('[planetPreview] entry lookup', key, !!entry);
     if (!entry || entry.Type !== 'Planet') return null;
     const { atlas, image } = await loadAtlasServer();
 
@@ -130,11 +137,13 @@ export async function generatePlanetTexture(coordStr: string, _size = 96): Promi
     if (subtypeRaw === 'EarthLike') {
         baseFrameName = 'earthlike';
     } else if (subtypeRaw === 'RobotFactory' || subtypeRaw === 'RobotDepot') {
+        console.log('[planetPreview] skipping robot subtype');
         return null;
     } else if (subtypeLower) {
         baseFrameName = `${subtypeLower}1`;
         overlayFrameName = `${subtypeLower}2`;
     }
+    console.log('[planetPreview] frames', baseFrameName, overlayFrameName);
     const baseFrame = baseFrameName ? atlas.frames[baseFrameName]?.frame : null;
     const overlayFrame = overlayFrameName ? atlas.frames[overlayFrameName]?.frame : null;
 
@@ -145,6 +154,7 @@ export async function generatePlanetTexture(coordStr: string, _size = 96): Promi
     wctx.clearRect(0, 0, workingSize, workingSize);
 
     if (baseFrame) {
+    console.log('[planetPreview] drawing base frame');
         wctx.drawImage(
             image,
             baseFrame.x,
@@ -160,11 +170,13 @@ export async function generatePlanetTexture(coordStr: string, _size = 96): Promi
         tintImageData(img, entry.PrimaryColor || entry.Primary || entry.PrimaryColor || [255, 255, 255]);
         wctx.putImageData(img, 0, 0);
     } else {
+    console.log('[planetPreview] no base frame, solid fill');
         wctx.fillStyle = `rgb(${entry.PrimaryColor[0]},${entry.PrimaryColor[1]},${entry.PrimaryColor[2]})`;
         wctx.beginPath(); wctx.arc(workingSize / 2, workingSize / 2, workingSize / 2 - 2, 0, Math.PI * 2); wctx.fill();
     }
 
     if (overlayFrame) {
+    console.log('[planetPreview] overlay frame');
         const tmp = createCanvas(workingSize, workingSize); const tctx = tmp.getContext('2d');
         (tctx as any).imageSmoothingEnabled = false;
         tctx.drawImage(image, overlayFrame.x, overlayFrame.y, overlayFrame.w, overlayFrame.h, 0, 0, workingSize, workingSize);
@@ -179,6 +191,7 @@ export async function generatePlanetTexture(coordStr: string, _size = 96): Promi
         const ringFrameName = `${String(entry.Rings.Type).toLowerCase()}ring`;
         const ringFrame = atlas.frames[ringFrameName]?.frame;
         if (ringFrame) {
+            console.log('[planetPreview] rings frame', ringFrameName);
             wctx.drawImage(
                 image,
                 ringFrame.x,
@@ -201,12 +214,15 @@ export async function generatePlanetTexture(coordStr: string, _size = 96): Promi
     octx.drawImage(workCanvas, 0, 0, FINAL, FINAL);
 
     if (entry.Atmosphere) {
+        console.log('[planetPreview] atmosphere pass');
         const grad = octx.createRadialGradient(FINAL / 2, FINAL / 2, FINAL * 0.55, FINAL / 2, FINAL / 2, FINAL * 0.85);
         grad.addColorStop(0, 'rgba(255,255,255,0)');
         grad.addColorStop(1, 'rgba(255,255,255,0.4)');
         octx.fillStyle = grad;
         octx.beginPath(); octx.arc(FINAL / 2, FINAL / 2, FINAL / 2 - 2, 0, Math.PI * 2); octx.fill();
     }
+
+    console.log('[planetPreview] done', coordStr);
 
     return outCanvas.toBuffer('image/png');
 }
