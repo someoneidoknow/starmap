@@ -112,6 +112,7 @@ export function searchUniverse(universe: UniverseData, opts: SearchOptions): Sea
 		}
 
 		const matchingPlanets = [];
+		const colorDistMap = hasColorFilter ? new Map<Planet, number>() : null;
 
 		for (const planet of system.planets) {
 			if (hasPlanetTypeFilter) {
@@ -196,9 +197,11 @@ export function searchUniverse(universe: UniverseData, opts: SearchOptions): Sea
 
 			if (hasColorFilter) {
 				const pcol = planet.primary_color;
-				if (Math.abs(pcol.r - targetColor.r) > colorTolerance ||
-					Math.abs(pcol.g - targetColor.g) > colorTolerance ||
-					Math.abs(pcol.b - targetColor.b) > colorTolerance) continue;
+				const dr = pcol.r - targetColor.r;
+				const dg = pcol.g - targetColor.g;
+				const db = pcol.b - targetColor.b;
+				const dist = Math.sqrt(dr*dr + dg*dg + db*db);
+				colorDistMap!.set(planet, dist);
 			}
 
 			matchingPlanets.push(planet);
@@ -208,19 +211,13 @@ export function searchUniverse(universe: UniverseData, opts: SearchOptions): Sea
 			let finalPlanets = matchingPlanets;
 
 			if (hasColorFilter) {
-				finalPlanets = matchingPlanets.sort((a, b) => {
-					const da = Math.sqrt(
-						(a.primary_color.r - targetColor.r) ** 2 +
-						(a.primary_color.g - targetColor.g) ** 2 +
-						(a.primary_color.b - targetColor.b) ** 2
-					);
-					const db = Math.sqrt(
-						(b.primary_color.r - targetColor.r) ** 2 +
-						(b.primary_color.g - targetColor.g) ** 2 +
-						(b.primary_color.b - targetColor.b) ** 2
-					);
-					return da - db;
-				});
+				finalPlanets = matchingPlanets
+					.map(p => ({ p, d: colorDistMap!.get(p)! }))
+					.sort((a, b) => a.d - b.d)
+					.map(x => x.p);
+				if (colorTolerance > 0) {
+					finalPlanets = finalPlanets.filter(p => colorDistMap!.get(p)! <= colorTolerance);
+				}
 			}
 
 			for (const planet of finalPlanets) {
