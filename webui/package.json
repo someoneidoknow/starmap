@@ -34,6 +34,7 @@
 	},
 	"dependencies": {
 		"@msgpack/msgpack": "^3.1.2",
+		"node-canvas": "^2.9.0",
 		"pixi.js": "8.9.2",
 		"svelte-french-toast": "^1.2.0",
 		"svelte-range-slider-pips": "^4.0.7",
