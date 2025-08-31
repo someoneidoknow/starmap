@@ -8,6 +8,7 @@
 	export let selected = { x: 0, y: 0, z: 0, w: 0 };
 
 	let copied = false;
+	let linkCopied = false;
 
 	const translateTable: Record<string, string> = {
 		Type: 'Type',
@@ -48,6 +49,22 @@
 		copied = true;
 		setTimeout(() => (copied = false), 1200);
 	}
+
+	function copyLink() {
+		const coordStr = `${selected.x},${selected.y},${selected.z},${selected.w}`;
+		const current = new URL(window.location.href);
+		const params = current.searchParams;
+		params.delete('c');
+		let other = '';
+		params.forEach((v, k) => {
+			other += (other ? '&' : '') + encodeURIComponent(k) + '=' + encodeURIComponent(v);
+		});
+		const base = current.origin + current.pathname;
+		const url = base + '?' + (other ? other + '&' : '') + 'c=' + coordStr + (current.hash || '');
+		navigator.clipboard.writeText(url);
+		linkCopied = true;
+		setTimeout(() => (linkCopied = false), 1200);
+	}
 </script>
 
 <Window bind:left bind:top autoWidth={true}>
@@ -83,6 +100,21 @@
 						d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184"
 					/></svg
 				>
+			{/if}
+		</button>
+		<button class="copy-button" on:click={copyLink} aria-label="Copy link">
+			{#if linkCopied}
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					fill="none"
+					viewBox="0 0 24 24"
+					stroke-width="1.5"
+					stroke="currentColor"
+					class="size-6 fade"
+					><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg
+				>
+			{:else}
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" /></svg>
 			{/if}
 		</button>
 	</span>
@@ -137,6 +169,7 @@
 		background: none;
 		color: var(--text);
 		border: none;
+		margin-left: 0.5em;
 		padding: 0;
 		position: relative;
   		top: 3px;
