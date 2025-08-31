@@ -119,12 +119,19 @@ function tintImageData(data: { data: Uint8ClampedArray }, tint: [number, number,
     return data;
 }
 
+function normalizeCoordKey(coordStr: string): { key: string; parts: number[] } | null {
+    const parts = coordStr.split(',').map(s => parseInt(s.trim()));
+    if (parts.length !== 4 || parts.some(n => Number.isNaN(n))) return null;
+    return { key: parts.join(', '), parts };
+}
+
 export async function generatePlanetTexture(coordStr: string, _size = 96): Promise<Buffer | null> {
     console.log('[planetPreview] generatePlanetTexture', coordStr);
     const universe = await loadUniverseServer();
-    const parts = coordStr.split(',').map(s => parseInt(s.trim()));
-    if (parts.length !== 4 || parts.some(n => Number.isNaN(n))) return null;
-    const key = parts.join(', ');
+    const norm = normalizeCoordKey(coordStr);
+    if (!norm) { console.log('[planetPreview] invalid coord format'); return null; }
+    const { key, parts } = norm;
+    console.log('[planetPreview] canonical key', key);
     const entry = universe[key];
     console.log('[planetPreview] entry lookup', key, !!entry);
     if (!entry || entry.Type !== 'Planet') return null;

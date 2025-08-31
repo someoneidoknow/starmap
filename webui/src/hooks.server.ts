@@ -41,7 +41,7 @@ export const handle: Handle = async ({ event, resolve }) => {
         let image = url.origin + '/favicon.svg';
 		if (coord) {
 			console.log('[hooks] fetching universe entry', coord);
-			const entry = await getUniverseEntry(coord);
+			const entry = await getUniverseEntry(coord.replace(/\s+/g, ''));
 			console.log('[hooks] entry', entry ? 'found' : 'missing');
 			if (entry) {
 				if (entry.Type === 'Planet') title = entry.Name || `${entry.SubType} Planet`;
