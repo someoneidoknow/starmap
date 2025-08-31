@@ -10,7 +10,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 	const ua = (event.request.headers.get('user-agent') || '').toLowerCase();
 
 	if (url.pathname === '/planet-preview.png') {
-		const coord = url.searchParams.get('coord');
+		const coord = url.searchParams.get('c');
 		if (!coord) return new Response('coord query required', { status: 400 });
 		try {
 			const size = Math.min(1024, Math.max(64, parseInt(url.searchParams.get('size') || '512')));
@@ -28,7 +28,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 	}
 
 	if (isDiscord(ua)) {
-        const coord = url.searchParams.get('coord');
+	const coord = url.searchParams.get('c');
         let title = 'Starmap';
         let desc = 'Gab starmap';
         let image = url.origin + '/favicon.svg';

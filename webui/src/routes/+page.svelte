@@ -23,7 +23,7 @@
 	let initialSelected: Coordinate | null = null;
 	if (typeof window !== 'undefined') {
 		const u = new URL(window.location.href);
-		initialSelected = parseCoordString(u.searchParams.get('coord')) || parseCoordString(u.hash ? u.hash.slice(1) : null);
+		initialSelected = parseCoordString(u.searchParams.get('c')) || parseCoordString(u.hash ? u.hash.slice(1) : null);
 	}
 
 	function focusFromEntry(c: Coordinate) {
@@ -57,7 +57,7 @@
 			const handleLocation = () => {
 				if (internalUpdate) { internalUpdate = false; return; }
 				const u = new URL(window.location.href);
-				const next = parseCoordString(u.searchParams.get('coord')) || (!u.searchParams.get('coord') ? parseCoordString(u.hash ? u.hash.slice(1) : null) : null);
+				const next = parseCoordString(u.searchParams.get('c')) || (!u.searchParams.get('c') ? parseCoordString(u.hash ? u.hash.slice(1) : null) : null);
 				if (next && key(next) !== key(selected)) focusFromEntry(next);
 			};
 			window.addEventListener('hashchange', handleLocation);
@@ -124,13 +124,13 @@
 	$: if (typeof window !== 'undefined') {
 		const coordStr = hashKey(selected);
 		const current = new URL(window.location.href);
-		if (current.searchParams.get('coord') !== coordStr) {
+		if (current.searchParams.get('c') !== coordStr) {
 			const params = current.searchParams;
-			params.delete('coord');
+			params.delete('c');
 			let other = '';
 			params.forEach((v, k) => { other += (other ? '&' : '') + encodeURIComponent(k) + '=' + encodeURIComponent(v); });
 			const base = current.origin + current.pathname;
-			const newUrl = base + '?' + (other ? other + '&' : '') + 'coord=' + coordStr + (current.hash || '');
+			const newUrl = base + '?' + (other ? other + '&' : '') + 'c=' + coordStr + (current.hash || '');
 			internalUpdate = true;
 			history.replaceState(history.state, '', newUrl);
 		}
