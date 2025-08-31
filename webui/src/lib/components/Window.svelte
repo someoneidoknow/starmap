@@ -27,8 +27,17 @@
 		effMaxH: number | undefined;
 	let savedHeight = 0;
 	let headerHeight = 0;
+	let uiScale = 1;
+
+	function readScale() {
+		if (typeof window === 'undefined') return 1;
+		const v = getComputedStyle(document.documentElement).getPropertyValue('--ui-scale').trim();
+		const n = parseFloat(v);
+		return isNaN(n) ? 1 : n;
+	}
 
 	function dragStart(e: MouseEvent) {
+		uiScale = readScale();
 		startX = e.clientX;
 		startY = e.clientY;
 		baseL = left;
@@ -38,8 +47,10 @@
 		e.preventDefault();
 	}
 	function dragMove(e: MouseEvent) {
-		left = baseL + e.clientX - startX;
-		top = baseT + e.clientY - startY;
+		const dxScreen = e.clientX - startX;
+		const dyScreen = e.clientY - startY;
+		left = baseL + dxScreen;
+		top = baseT + dyScreen;
 		enforceBounds();
 	}
 	function dragEnd() {
@@ -60,6 +71,7 @@
 		if (collapsed && (d.includes('n') || d.includes('s'))) return;
 		e.stopPropagation();
 		dir = d;
+		uiScale = readScale();
 		startX = e.clientX;
 		startY = e.clientY;
 		baseL = left;
@@ -90,31 +102,39 @@
 	}
 
 	function resizeMove(e: MouseEvent) {
-		const dx = e.clientX - startX;
-		const dy = e.clientY - startY;
+		const dxScreen = e.clientX - startX;
+		const dyScreen = e.clientY - startY;
+		const dxInternal = dxScreen / uiScale;
+		const dyInternal = dyScreen / uiScale;
 		let newW = startW;
 		let newH = startH;
 		let newL = baseL;
 		let newT = baseT;
-		if (dir.includes('e')) newW = clamp(startW + dx, effMinW, effMaxW);
-		if (dir.includes('s')) newH = clamp(startH + dy, effMinH, effMaxH);
+
+		if (dir.includes('e')) {
+			newW = clamp(startW + dxInternal, effMinW, effMaxW);
+		}
+		if (dir.includes('s')) {
+			newH = clamp(startH + dyInternal, effMinH, effMaxH);
+		}
 		if (dir.includes('w')) {
-			const desired = startW - dx;
+			const desired = startW - dxInternal;
 			if (effMaxW !== undefined && desired >= effMaxW) {
 				newW = effMaxW;
-				newL = baseL + (startW - effMaxW);
+				newL = baseL + (startW - effMaxW) * uiScale;
 			} else {
 				newW = clamp(desired, effMinW, effMaxW);
-				newL = baseL + (startW - newW);
-				if (newW === effMinW && desired < effMinW) newL = baseL + (startW - effMinW);
+				const internalDelta = startW - newW;
+				newL = baseL + internalDelta * uiScale;
 			}
 		}
 		if (dir.includes('n')) {
-			const raw = startH - dy;
+			const raw = startH - dyInternal;
 			newH = clamp(raw, effMinH, effMaxH);
-			newT = baseT + (startH - newH);
-			if (newH === effMinH && raw < effMinH) newT = baseT + (startH - effMinH);
+			const internalDelta = startH - newH;
+			newT = baseT + internalDelta * uiScale;
 		}
+		
 		left = newL;
 		top = newT;
 		width = newW;
