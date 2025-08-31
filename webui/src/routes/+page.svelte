@@ -60,7 +60,6 @@
 				}
 			};
 			window.addEventListener('hashchange', onHash);
-			onDestroy(() => window.removeEventListener('hashchange', onHash));
 		} catch (error) {
 			console.error('Failed to load universe data:', error);
 		}
