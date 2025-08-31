@@ -45,7 +45,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 				} else {
 					desc = escape(`${coord} • ${entry.Type}`);
 				}
-				image = `${url.origin}/planet-preview.png?coord=${encodeURIComponent(coord)}`;
+				image = `${url.origin}/planet-preview.png?c=${encodeURIComponent(coord)}`;
 			}
 		}
 		const html = `<!doctype html><html lang="en"><head>
