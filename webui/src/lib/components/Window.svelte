@@ -154,6 +154,7 @@
 		setTimeout(checkHeight, 0);
 		setTimeout(checkHeight, 10);
 		setTimeout(checkHeight, 100);
+		setInterval(checkHeight, 1000); // possibly fixes a weird bug
 		
 		if (typeof window !== 'undefined') {
 			const onR = () => enforceBounds();
