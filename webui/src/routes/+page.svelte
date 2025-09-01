@@ -63,6 +63,26 @@
 		try {
 			raw_data = await loadUniverse();
 			universe_data = await parseUniverse(raw_data);
+			if (typeof window !== 'undefined') {
+				const u = new URL(window.location.href);
+				if (!u.searchParams.get('c')) {
+					const ranmat = u.searchParams.get('ranmat');
+					if (ranmat && raw_data) {
+						const pfx = ranmat.toLowerCase();
+						for (const [coordKey, entry] of Object.entries(raw_data as any)) {
+							if ((entry as any)?.Type === 'Planet' && typeof (entry as any).RandomMaterial === 'string') {
+								if ((entry as any).RandomMaterial.toLowerCase().startsWith(pfx)) {
+									const parts = coordKey.split(',').map(s => parseInt(s.trim()));
+									if (parts.length === 4 && parts.every(n => !isNaN(n))) {
+										initialSelected = { x: parts[0], y: parts[1], z: parts[2], w: parts[3] };
+									}
+									break;
+								}
+							}
+						}
+					}
+				}
+			}
 			await applyInitialSelection();
 			const handleLocation = () => {
 				if (internalUpdate) { internalUpdate = false; return; }

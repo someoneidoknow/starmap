@@ -224,3 +224,17 @@ export async function getUniverseEntry(coordStr: string) {
     if (parts.length !== 4 || parts.some(n => Number.isNaN(n))) return null;
     return u[parts.join(', ')];
 }
+
+export async function findPlanetByRandomMaterialPrefix(prefix: string): Promise<{ coord: string; entry: any } | null> {
+    if (!prefix) return null;
+    const u = await loadUniverseServer();
+    const pfx = prefix.toLowerCase();
+    for (const [coord, entry] of Object.entries(u)) {
+        if (entry && entry.Type === 'Planet' && typeof entry.RandomMaterial === 'string') {
+            if (entry.RandomMaterial.toLowerCase().startsWith(pfx)) {
+                return { coord: coord.replace(/\s+/g, '') , entry };
+            }
+        }
+    }
+    return null;
+}

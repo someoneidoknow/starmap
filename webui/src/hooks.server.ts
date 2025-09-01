@@ -1,5 +1,5 @@
 import type { Handle } from '@sveltejs/kit';
-import { generatePlanetTexture, getUniverseEntry } from '$lib/server/planetPreview';
+import { generatePlanetTexture, getUniverseEntry, findPlanetByRandomMaterialPrefix } from '$lib/server/planetPreview';
 
 const DISCORD_MATCHERS = ['discordbot', 'discord'];
 
@@ -10,8 +10,15 @@ export const handle: Handle = async ({ event, resolve }) => {
 	const ua = (event.request.headers.get('user-agent') || '').toLowerCase();
 
 	if (url.pathname === '/planet-preview.png') {
-		const coord = url.searchParams.get('c');
-		if (!coord) return new Response('coord query required', { status: 400 });
+		let coord = url.searchParams.get('c');
+		if (!coord) {
+			const ranmat = url.searchParams.get('ranmat');
+			if (ranmat) {
+				const found = await findPlanetByRandomMaterialPrefix(ranmat);
+				if (found) coord = found.coord;
+			}
+		}
+		if (!coord) return new Response('coord or ranmat query required', { status: 400 });
 		try {
 			const size = Math.min(1024, Math.max(64, parseInt(url.searchParams.get('size') || '512')));
 			const buf = await generatePlanetTexture(coord, size);
@@ -28,24 +35,32 @@ export const handle: Handle = async ({ event, resolve }) => {
 	}
 
 	if (isDiscord(ua)) {
-	const coord = url.searchParams.get('c');
+		const coord = url.searchParams.get('c');
+        let resolvedCoord = coord;
+        if (!resolvedCoord) {
+            const ranmat = url.searchParams.get('ranmat');
+            if (ranmat) {
+                const found = await findPlanetByRandomMaterialPrefix(ranmat);
+                if (found) resolvedCoord = found.coord;
+            }
+        }
         let title = 'Starmap';
         let desc = 'Empty sector';
         let image = url.origin + '/favicon.svg';
-		if (coord) {
-			const entry = await getUniverseEntry(coord.replace(/\s+/g, ''));
+		if (resolvedCoord) {
+			const entry = await getUniverseEntry(resolvedCoord.replace(/\s+/g, ''));
 			if (entry) {
 				if (entry.Type === 'Planet') title = entry.Name || `${entry.SubType} Planet`;
 				else if (entry.Type === 'Star') title = `${entry.SubType} Star`;
 				const escape = (s: string) => s.replace(/["&<>]/g, c => ({ '"': '&quot;', '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c] as string));
 				if (entry.Type === 'Planet') {
-					desc = escape(`${coord} • ${entry.SubType || 'Planet'} • ${entry.RandomMaterial || 'None'}`);
+					desc = escape(`${resolvedCoord} • ${entry.SubType || 'Planet'} • ${entry.RandomMaterial || 'None'}`);
 				} else if (entry.Type === 'Star') {
-					desc = escape(`${coord} • ${entry.SubType || 'Star'}`);
+					desc = escape(`${resolvedCoord} • ${entry.SubType || 'Star'}`);
 				} else {
-					desc = escape(`${coord} • ${entry.Type}`);
+					desc = escape(`${resolvedCoord} • ${entry.Type}`);
 				}
-				image = `${url.origin}/planet-preview.png?c=${encodeURIComponent(coord)}`;
+				image = `${url.origin}/planet-preview.png?c=${encodeURIComponent(resolvedCoord)}`;
 			}
 		}
 		const html = `<!doctype html><html lang="en"><head>
