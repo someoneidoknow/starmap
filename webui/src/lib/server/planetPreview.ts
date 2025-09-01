@@ -238,3 +238,39 @@ export async function findPlanetByRandomMaterialPrefix(prefix: string): Promise<
     }
     return null;
 }
+
+export async function generateEmptySectorPreview(size = 96): Promise<Buffer> {
+    const { atlas, image } = await loadAtlasServer();
+    const baseFrame = atlas.frames['barren1']?.frame;
+    const FINAL = Math.max(16, Math.min(512, size));
+    const canvas = createCanvas(FINAL, FINAL);
+    const ctx = canvas.getContext('2d');
+    (ctx as any).imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, FINAL, FINAL);
+    if (baseFrame) {
+        ctx.drawImage(
+            image,
+            baseFrame.x,
+            baseFrame.y,
+            baseFrame.w,
+            baseFrame.h,
+            0,
+            0,
+            FINAL,
+            FINAL
+        );
+    } else {
+        ctx.fillStyle = '#666';
+        ctx.beginPath(); ctx.arc(FINAL/2, FINAL/2, FINAL/2 - 2, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.fillStyle = '#ffffff';
+    const fontSize = Math.floor(FINAL * 0.55);
+    ctx.font = `bold ${fontSize}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(0,0,0,0.7)';
+    ctx.shadowBlur = Math.max(2, FINAL * 0.05);
+    ctx.lineWidth = 2;
+    ctx.fillText('?', FINAL / 2, FINAL / 2 + FINAL * 0.02);
+    return canvas.toBuffer('image/png');
+}

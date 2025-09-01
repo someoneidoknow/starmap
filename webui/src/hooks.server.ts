@@ -1,5 +1,5 @@
 import type { Handle } from '@sveltejs/kit';
-import { generatePlanetTexture, getUniverseEntry, findPlanetByRandomMaterialPrefix } from '$lib/server/planetPreview';
+import { generatePlanetTexture, getUniverseEntry, findPlanetByRandomMaterialPrefix, generateEmptySectorPreview } from '$lib/server/planetPreview';
 
 const DISCORD_MATCHERS = ['discordbot', 'discord'];
 
@@ -18,24 +18,27 @@ export const handle: Handle = async ({ event, resolve }) => {
 				if (found) coord = found.coord;
 			}
 		}
-		if (!coord) return new Response('coord or ranmat query required', { status: 400 });
 		try {
 			const size = Math.min(1024, Math.max(64, parseInt(url.searchParams.get('size') || '512')));
+			if (!coord) {
+				const buf = await generateEmptySectorPreview(size);
+				return new Response(new Uint8Array(buf), { headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=120' } });
+			}
 			const buf = await generatePlanetTexture(coord, size);
-			if (!buf) return new Response('not found', { status: 404 });
-			return new Response(new Uint8Array(buf), {
-				headers: {
-					'Content-Type': 'image/png',
-					'Cache-Control': 'public, max-age=300'
-				}
-			});
+			if (!buf) {
+				const eb = await generateEmptySectorPreview(size);
+				return new Response(new Uint8Array(eb), { headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=120' } });
+			}
+			return new Response(new Uint8Array(buf), { headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=300' } });
 		} catch (e: any) {
-			return new Response('error generating image', { status: 500 });
+			const size = Math.min(512, Math.max(64, parseInt(url.searchParams.get('size') || '128')));
+			const buf = await generateEmptySectorPreview(size);
+			return new Response(new Uint8Array(buf), { headers: { 'Content-Type': 'image/png', 'Cache-Control': 'no-cache' } });
 		}
 	}
 
 	if (isDiscord(ua)) {
-		const coord = url.searchParams.get('c');
+	const coord = url.searchParams.get('c');
         let resolvedCoord = coord;
         if (!resolvedCoord) {
             const ranmat = url.searchParams.get('ranmat');
@@ -46,7 +49,7 @@ export const handle: Handle = async ({ event, resolve }) => {
         }
         let title = 'Starmap';
         let desc = 'Empty sector';
-        let image = url.origin + '/favicon.svg';
+        let image = `${url.origin}/planet-preview.png`;
 		if (resolvedCoord) {
 			const entry = await getUniverseEntry(resolvedCoord.replace(/\s+/g, ''));
 			if (entry) {
