@@ -81,6 +81,23 @@
 							}
 						}
 					}
+					if (!initialSelected) {
+						const pname = u.searchParams.get('pname');
+						if (pname && raw_data) {
+							const pfx2 = pname.toLowerCase();
+							for (const [coordKey, entry] of Object.entries(raw_data as any)) {
+								if ((entry as any)?.Type === 'Planet' && typeof (entry as any).Name === 'string') {
+									if ((entry as any).Name.toLowerCase().startsWith(pfx2)) {
+										const parts = coordKey.split(',').map(s => parseInt(s.trim()));
+										if (parts.length === 4 && parts.every(n => !isNaN(n))) {
+											initialSelected = { x: parts[0], y: parts[1], z: parts[2], w: parts[3] };
+										}
+										break;
+									}
+								}
+							}
+						}
+					}
 				}
 			}
 			await applyInitialSelection();

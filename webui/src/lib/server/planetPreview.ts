@@ -239,6 +239,20 @@ export async function findPlanetByRandomMaterialPrefix(prefix: string): Promise<
     return null;
 }
 
+export async function findPlanetByNamePrefix(prefix: string): Promise<{ coord: string; entry: any } | null> {
+    if (!prefix) return null;
+    const u = await loadUniverseServer();
+    const pfx = prefix.toLowerCase();
+    for (const [coord, entry] of Object.entries(u)) {
+        if (entry && entry.Type === 'Planet' && typeof entry.Name === 'string') {
+            if (entry.Name.toLowerCase().startsWith(pfx)) {
+                return { coord: coord.replace(/\s+/g, ''), entry };
+            }
+        }
+    }
+    return null;
+}
+
 export async function generateEmptySectorPreview(size = 96): Promise<Buffer> {
     const { atlas, image } = await loadAtlasServer();
     const baseFrame = atlas.frames['barren1']?.frame;

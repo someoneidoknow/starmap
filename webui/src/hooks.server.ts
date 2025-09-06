@@ -1,5 +1,5 @@
 import type { Handle } from '@sveltejs/kit';
-import { generatePlanetTexture, getUniverseEntry, findPlanetByRandomMaterialPrefix, generateEmptySectorPreview } from '$lib/server/planetPreview';
+import { generatePlanetTexture, getUniverseEntry, findPlanetByRandomMaterialPrefix, generateEmptySectorPreview, findPlanetByNamePrefix } from '$lib/server/planetPreview';
 
 const DISCORD_MATCHERS = ['discordbot', 'discord'];
 
@@ -16,6 +16,13 @@ export const handle: Handle = async ({ event, resolve }) => {
 			if (ranmat) {
 				const found = await findPlanetByRandomMaterialPrefix(ranmat);
 				if (found) coord = found.coord;
+			}
+			if (!coord) {
+				const pname = url.searchParams.get('pname');
+				if (pname) {
+					const found = await findPlanetByNamePrefix(pname);
+					if (found) coord = found.coord;
+				}
 			}
 		}
 		try {
@@ -46,6 +53,13 @@ export const handle: Handle = async ({ event, resolve }) => {
                 const found = await findPlanetByRandomMaterialPrefix(ranmat);
                 if (found) resolvedCoord = found.coord;
             }
+			if (!resolvedCoord) {
+				const pname = url.searchParams.get('pname');
+				if (pname) {
+					const found = await findPlanetByNamePrefix(pname);
+					if (found) resolvedCoord = found.coord;
+				}
+			}
         }
         let title = 'Starmap';
         let desc = 'Empty sector';
