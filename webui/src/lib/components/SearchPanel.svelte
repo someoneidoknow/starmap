@@ -60,9 +60,13 @@
 
 	let color_hex = '';
 	let color_similarity = 0;
+	let secondary_color_hex = '';
+	let secondary_color_similarity = 0;
 	let colorPickerReady = false;
 	let color_input = '';
+	let secondary_color_input = '';
 	let hexPickerEl: any;
+	let hexPickerSecondaryEl: any;
 	let sizeClass = '';
 	let formEl: HTMLDivElement;
 	let ro: ResizeObserver | null = null;
@@ -98,6 +102,16 @@
 		if (n) {
 			color_hex = n;
 			if (hexPickerEl) hexPickerEl.color = n;
+			run();
+		}
+	}
+
+	function secondary_color_text_oninput(e: Event & { currentTarget: EventTarget & HTMLInputElement }) {
+		secondary_color_input = e.currentTarget.value;
+		const n = normalizeColor(secondary_color_input);
+		if (n) {
+			secondary_color_hex = n;
+			if (hexPickerSecondaryEl) hexPickerSecondaryEl.color = n;
 			run();
 		}
 	}
@@ -172,6 +186,8 @@
 			...({ resourcesTri: convertedResourceTri } as any),
 			color: color_hex,
 			colorSimilarity: color_similarity,
+			secondaryColor: secondary_color_hex,
+			secondaryColorSimilarity: secondary_color_similarity,
 			earthlikesInSystem: convertTriState(earthlikes_filter)
 		} as any);
 	}
@@ -316,6 +332,52 @@
 					>
 				</div>
 			</div>
+			<h3>Secondary Color</h3>
+			<div class="color-row">
+				{#if colorPickerReady}
+					<hex-color-picker
+						bind:this={hexPickerSecondaryEl}
+						color={secondary_color_hex}
+						on:color-changed={(e: any) => {
+							secondary_color_hex = e.detail.value;
+							secondary_color_input = secondary_color_hex;
+							run();
+						}}
+					></hex-color-picker>
+				{/if}
+				<div class="color-sim">
+					<label class="field">
+						<span class="label">Manual color</span>
+						<input
+							class="input"
+							bind:value={secondary_color_input}
+							on:input={secondary_color_text_oninput}
+							placeholder="#ff8800 or rgb(255,136,0)"
+						/>
+					</label>
+					<label class="field">
+						<span class="label"
+							>Color tolerance {secondary_color_similarity}% {secondary_color_similarity === 0 ? '(off)' : ''}</span
+						>
+						<input
+							type="range"
+							min="0"
+							max="100"
+							bind:value={secondary_color_similarity}
+							on:input={() => run()}
+						/>
+					</label>
+					<button
+						type="button"
+						class="clear"
+						on:click={() => {
+							secondary_color_hex = '';
+							secondary_color_input = '';
+							secondary_color_similarity = 0;
+							run();
+						}}>Clear</button
+					>
+				</div>
 		</section>
 
 		<section class="section">

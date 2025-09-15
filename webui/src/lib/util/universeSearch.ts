@@ -26,6 +26,8 @@ export interface SearchOptions {
 	resourcesTri?: Record<number, Tri>;
 	color?: string;
 	colorSimilarity?: number;
+	secondaryColor?: string;
+	secondaryColorSimilarity?: number;
 	earthlikesInSystem?: Tri;
 	starTypeFilters?: Record<number, number>;
 }
@@ -45,6 +47,8 @@ export function searchUniverse(universe: UniverseData, opts: SearchOptions): Sea
 	const resourcesTri = opts.resourcesTri ?? {};
 	const color = (opts.color ?? '').trim();
 	const colorSimilarity = typeof opts.colorSimilarity === 'number' ? Math.max(0, Math.min(100, opts.colorSimilarity)) : 0;
+	const secondaryColor = (opts.secondaryColor ?? '').trim();
+	const secondaryColorSimilarity = typeof opts.secondaryColorSimilarity === 'number' ? Math.max(0, Math.min(100, opts.secondaryColorSimilarity)) : 0;
 	const earthlikesInSystem = opts.earthlikesInSystem ?? 'any';
 	const starTypeFilters = opts.starTypeFilters ?? {};
 
@@ -74,6 +78,8 @@ export function searchUniverse(universe: UniverseData, opts: SearchOptions): Sea
 
 	const targetColor = color !== '' && colorSimilarity > 0 ? hexToRgb(color) : null;
 	const colorTolerance = targetColor ? Math.max(1, (colorSimilarity / 100) * 255) : 0;
+	const targetSecondaryColor = secondaryColor !== '' && secondaryColorSimilarity > 0 ? hexToRgb(secondaryColor) : null;
+	const secondaryColorTolerance = targetSecondaryColor ? Math.max(1, (secondaryColorSimilarity / 100) * 255) : 0;
 
 	const hasNameFilter = name !== '';
 	const hasRanmatFilter = ranmat !== '';
@@ -82,6 +88,7 @@ export function searchUniverse(universe: UniverseData, opts: SearchOptions): Sea
 	const hasPlanetTypeFilter = Object.values(planetTypeFilters).some((v) => v !== 0);
 	const hasStarTypeFilter = Object.values(starTypeFilters).some((v) => v !== 0);
 	const hasColorFilter = targetColor !== null;
+	const hasSecondaryColorFilter = targetSecondaryColor !== null;
 
 	const resourcesMap = new Map<Resource, number>();
 	for (const res of resources) {
@@ -113,6 +120,7 @@ export function searchUniverse(universe: UniverseData, opts: SearchOptions): Sea
 
 		const matchingPlanets = [];
 		const colorDistMap = hasColorFilter ? new Map<Planet, number>() : null;
+		const secondaryColorDistMap = hasSecondaryColorFilter ? new Map<Planet, number>() : null;
 
 		for (const planet of system.planets) {
 			if (hasPlanetTypeFilter) {
@@ -203,6 +211,14 @@ export function searchUniverse(universe: UniverseData, opts: SearchOptions): Sea
 				const dist = Math.sqrt(dr*dr + dg*dg + db*db);
 				colorDistMap!.set(planet, dist);
 			}
+			if (hasSecondaryColorFilter) {
+				const scol = planet.secondary_color;
+				const dr = scol.r - targetSecondaryColor.r;
+				const dg = scol.g - targetSecondaryColor.g;
+				const db = scol.b - targetSecondaryColor.b;
+				const dist = Math.sqrt(dr*dr + dg*dg + db*db);
+				secondaryColorDistMap!.set(planet, dist);
+			}
 
 			matchingPlanets.push(planet);
 		}
@@ -211,12 +227,22 @@ export function searchUniverse(universe: UniverseData, opts: SearchOptions): Sea
 			let finalPlanets = matchingPlanets;
 
 			if (hasColorFilter) {
-				finalPlanets = matchingPlanets
+				finalPlanets = finalPlanets
 					.map(p => ({ p, d: colorDistMap!.get(p)! }))
 					.sort((a, b) => a.d - b.d)
 					.map(x => x.p);
 				if (colorTolerance > 0) {
 					finalPlanets = finalPlanets.filter(p => colorDistMap!.get(p)! <= colorTolerance);
+				}
+				if (finalPlanets.length === 0) continue;
+			}
+			if (hasSecondaryColorFilter) {
+				finalPlanets = finalPlanets
+					.map(p => ({ p, d: secondaryColorDistMap!.get(p)! }))
+					.sort((a, b) => a.d - b.d)
+					.map(x => x.p);
+				if (secondaryColorTolerance > 0) {
+					finalPlanets = finalPlanets.filter(p => secondaryColorDistMap!.get(p)! <= secondaryColorTolerance);
 				}
 				if (finalPlanets.length === 0) continue;
 			}
