@@ -276,12 +276,19 @@
 		const atlasPromise = loadTextureAtlas()
 			.then(({ atlasData, image }) => {
 				const atlasTexture = PIXI.Texture.from(image);
+				atlasTexture.baseTexture.scaleMode = 'nearest';
+				atlasTexture.baseTexture.autoGenerateMipmaps = true;
+				atlasTexture.baseTexture.update();
+				atlasTexture.baseTexture.updateMipmaps();
 				for (const textureName of [...allPlanetTextureNames, ...allStarTextureNames]) {
 					const frameKey = textureName.toLowerCase();
 					if (atlasData.frames[frameKey]) {
 						const frame = atlasData.frames[frameKey].frame;
 						const texture = new PIXI.Texture({ source: atlasTexture.source, frame: new PIXI.Rectangle(frame.x, frame.y, frame.w, frame.h) });
 						texture.baseTexture.scaleMode = 'nearest';
+						texture.baseTexture.autoGenerateMipmaps = true;
+						texture.baseTexture.update();
+						texture.baseTexture.updateMipmaps();
 						if (allPlanetTextureNames.includes(textureName)) {
 							planetTextures[textureName] = texture;
 							if (textureName === 'Icering') ringTextures['Ice'] = texture;
