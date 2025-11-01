@@ -243,22 +243,78 @@
 		coord_box = e.currentTarget.value;
 		run();
 	}
+
+	function resetAllFilters() {
+		name_box = '';
+		ranmat_box = '';
+		coord_box = '';
+		name_selected_type = SearchType.StartsWith;
+		ranmat_selected_type = SearchType.StartsWith;
+
+		for (const key in PlanetType) {
+			if (!isNaN(Number(key))) planet_type_filters[Number(key)] = 0;
+		}
+		for (const key in StarType) {
+			if (!isNaN(Number(key))) star_type_filters[Number(key)] = 0;
+		}
+
+		ring_filter = 0;
+		atmosphere_filter = 0;
+		tidal_filter = 0;
+		earthlikes_filter = 0;
+
+		temperature_range = [-400, 400];
+		gravity_range = [0, 400];
+
+		for (const r of allResources) {
+			resource_tri[r] = 0;
+		}
+
+		color_hex = '';
+		color_similarity = 0;
+		secondary_color_hex = '';
+		secondary_color_similarity = 0;
+		color_input = '';
+		secondary_color_input = '';
+
+		if (hexPickerEl) hexPickerEl.color = '';
+		if (hexPickerSecondaryEl) hexPickerSecondaryEl.color = '';
+
+		run();
+	}
 </script>
 
 <Window bind:left bind:top collapsible={true} minWidth={spMinWidth} maxHeight={spMaxHeight}>
 	<span slot="title">Search</span>
 
 	<div class="form {sizeClass}" bind:this={formEl}>
+		<button type="button" class="reset-btn" on:click={resetAllFilters}>
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				fill="none"
+				viewBox="0 0 24 24"
+				stroke-width="1.5"
+				stroke="currentColor"
+			>
+				<path
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+				/>
+			</svg>
+			Reset All Filters
+		</button>
+
 		<div class="row">
 			<label class="field">
 				<span class="label">Name</span>
-				<input class="input" on:input={name_oninput} placeholder="Search by name..." type="text" />
+				<input class="input" bind:value={name_box} on:input={name_oninput} placeholder="Search by name..." type="text" />
 			</label>
 			<label class="field narrow">
 				<span class="label">Match</span>
 				<select class="select" on:input={name_type_oninput}>
 					{#each types as type}
-						<option value={type}>{type}</option>
+						<option value={type} selected={type === types[name_selected_type]}>{type}</option>
 					{/each}
 				</select>
 			</label>
@@ -267,13 +323,13 @@
 		<div class="row">
 			<label class="field">
 				<span class="label">Random material</span>
-				<input class="input" on:input={ranmat_oninput} placeholder="e.g. Lodire" type="text" />
+				<input class="input" bind:value={ranmat_box} on:input={ranmat_oninput} placeholder="e.g. Lodire" type="text" />
 			</label>
 			<label class="field narrow">
 				<span class="label">Match</span>
 				<select class="select" on:input={ranmat_type_oninput}>
 					{#each types as type}
-						<option value={type}>{type}</option>
+						<option value={type} selected={type === types[ranmat_selected_type]}>{type}</option>
 					{/each}
 				</select>
 			</label>
@@ -281,7 +337,7 @@
 
 		<label class="field">
 			<span class="label">Coordinates</span>
-			<input class="input" on:input={coord_oninput} placeholder="x, y, z, w" type="text" />
+			<input class="input" bind:value={coord_box} on:input={coord_oninput} placeholder="x, y, z, w" type="text" />
 		</label>
 
 		<section class="section">
@@ -378,6 +434,7 @@
 						}}>Clear</button
 					>
 				</div>
+			</div>
 		</section>
 
 		<section class="section">
@@ -882,5 +939,33 @@
 	}
 	button.clear:hover {
 		border-color: var(--green-4);
+	}
+
+	.reset-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		width: 100%;
+		padding: calc(0.6rem * var(--ui-scale)) calc(0.8rem * var(--ui-scale));
+		border: 1px solid var(--green-3);
+		background: var(--bg);
+		color: var(--text);
+		border-radius: 0.5rem;
+		font-size: calc(0.9rem * var(--ui-scale));
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.15s ease;
+	}
+	.reset-btn svg {
+		width: 1.1rem;
+		height: 1.1rem;
+	}
+	.reset-btn:hover {
+		border-color: var(--green-4);
+		background: color-mix(in oklab, var(--green-2) 20%, var(--bg));
+	}
+	.reset-btn:active {
+		transform: scale(0.98);
 	}
 </style>
