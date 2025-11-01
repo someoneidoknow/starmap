@@ -1,6 +1,7 @@
 import { ZSTDDecoder } from 'zstddec';
 import { decode } from '@msgpack/msgpack';
 import { createCanvas, loadImage } from '@napi-rs/canvas';
+import { string_to_star_type, star_type_to_star_color } from '$lib/util/parse';
 
 type UniverseEntry = any;
 type AtlasFrame = { x: number; y: number; w: number; h: number };
@@ -120,102 +121,162 @@ function normalizeCoordKey(coordStr: string): { key: string; parts: number[] } |
     return { key: parts.join(', '), parts };
 }
 
-export async function generatePlanetTexture(coordStr: string, _size = 96): Promise<Buffer | null> {
+export async function generatePlanetTexture(coordStr: string, size = 96): Promise<Buffer | null> {
     const universe = await loadUniverseServer();
     const norm = normalizeCoordKey(coordStr);
     if (!norm) { return null; }
-    const { key, parts } = norm;
+    const { key } = norm;
     const entry = universe[key];
-    if (!entry || entry.Type !== 'Planet') return null;
+    if (!entry) return null;
+    const finalSize = Math.max(16, Math.min(512, Math.floor(size || 96)));
     const { atlas, image } = await loadAtlasServer();
 
-    const subtypeRaw: string = entry.SubType || '';
-    const subtypeLower = subtypeRaw.toLowerCase();
-    let baseFrameName: string | null = null;
-    let overlayFrameName: string | null = null;
-    if (subtypeRaw === 'EarthLike') {
-        baseFrameName = 'earthlike';
-    } else if (subtypeRaw === 'RobotFactory' || subtypeRaw === 'RobotDepot') {
-        return null;
-    } else if (subtypeLower) {
-        baseFrameName = `${subtypeLower}1`;
-        overlayFrameName = `${subtypeLower}2`;
-    }
-    const baseFrame = baseFrameName ? atlas.frames[baseFrameName]?.frame : null;
-    const overlayFrame = overlayFrameName ? atlas.frames[overlayFrameName]?.frame : null;
+    if (entry.Type === 'Planet') {
+        const subtypeRaw: string = entry.SubType || '';
+        const subtypeLower = subtypeRaw.toLowerCase();
+        let baseFrameName: string | null = null;
+        let overlayFrameName: string | null = null;
+        if (subtypeRaw === 'EarthLike') {
+            baseFrameName = 'earthlike';
+        } else if (subtypeRaw === 'RobotFactory' || subtypeRaw === 'RobotDepot') {
+            return null;
+        } else if (subtypeLower) {
+            baseFrameName = `${subtypeLower}1`;
+            overlayFrameName = `${subtypeLower}2`;
+        }
+        const baseFrame = baseFrameName ? atlas.frames[baseFrameName]?.frame : null;
+        const overlayFrame = overlayFrameName ? atlas.frames[overlayFrameName]?.frame : null;
 
-    const workingSize = baseFrame ? Math.max(baseFrame.w, baseFrame.h) : 48;
-    const workCanvas = createCanvas(workingSize, workingSize);
-    const wctx = workCanvas.getContext('2d');
-    (wctx as any).imageSmoothingEnabled = false;
-    wctx.clearRect(0, 0, workingSize, workingSize);
+        const workingSize = baseFrame ? Math.max(baseFrame.w, baseFrame.h) : 48;
+        const workCanvas = createCanvas(workingSize, workingSize);
+        const wctx = workCanvas.getContext('2d');
+        (wctx as any).imageSmoothingEnabled = false;
+        wctx.clearRect(0, 0, workingSize, workingSize);
 
-    if (baseFrame) {
-        wctx.drawImage(
-            image,
-            baseFrame.x,
-            baseFrame.y,
-            baseFrame.w,
-            baseFrame.h,
-            0,
-            0,
-            workingSize,
-            workingSize
-        );
-        const img = wctx.getImageData(0, 0, workingSize, workingSize);
-        tintImageData(img, entry.PrimaryColor || entry.Primary || entry.PrimaryColor || [255, 255, 255]);
-        wctx.putImageData(img, 0, 0);
-    } else {
-        wctx.fillStyle = `rgb(${entry.PrimaryColor[0]},${entry.PrimaryColor[1]},${entry.PrimaryColor[2]})`;
-        wctx.beginPath(); wctx.arc(workingSize / 2, workingSize / 2, workingSize / 2 - 2, 0, Math.PI * 2); wctx.fill();
-    }
-
-    if (overlayFrame) {
-        const tmp = createCanvas(workingSize, workingSize); const tctx = tmp.getContext('2d');
-        (tctx as any).imageSmoothingEnabled = false;
-        tctx.drawImage(image, overlayFrame.x, overlayFrame.y, overlayFrame.w, overlayFrame.h, 0, 0, workingSize, workingSize);
-        const img2 = tctx.getImageData(0, 0, workingSize, workingSize);
-        if (entry.SecondaryColor) tintImageData(img2, entry.SecondaryColor);
-        tctx.putImageData(img2, 0, 0);
-        wctx.globalAlpha = 1;
-        wctx.drawImage(tmp, 0, 0);
-    }
-
-    if (entry.Rings && entry.Rings.Type) {
-        const ringFrameName = `${String(entry.Rings.Type).toLowerCase()}ring`;
-        const ringFrame = atlas.frames[ringFrameName]?.frame;
-        if (ringFrame) {
+        if (baseFrame) {
+            const primaryTint = Array.isArray(entry.PrimaryColor)
+                ? entry.PrimaryColor
+                : Array.isArray(entry.Primary)
+                    ? entry.Primary
+                    : [255, 255, 255];
             wctx.drawImage(
                 image,
-                ringFrame.x,
-                ringFrame.y,
-                ringFrame.w,
-                ringFrame.h,
+                baseFrame.x,
+                baseFrame.y,
+                baseFrame.w,
+                baseFrame.h,
                 0,
                 0,
                 workingSize,
                 workingSize
             );
+            const img = wctx.getImageData(0, 0, workingSize, workingSize);
+            tintImageData(img, primaryTint as [number, number, number]);
+            wctx.putImageData(img, 0, 0);
+        } else {
+            const primaryTint = Array.isArray(entry.PrimaryColor)
+                ? entry.PrimaryColor
+                : Array.isArray(entry.Primary)
+                    ? entry.Primary
+                    : [255, 255, 255];
+            wctx.fillStyle = `rgb(${primaryTint[0]},${primaryTint[1]},${primaryTint[2]})`;
+            wctx.beginPath(); wctx.arc(workingSize / 2, workingSize / 2, workingSize / 2 - 2, 0, Math.PI * 2); wctx.fill();
         }
+
+        if (overlayFrame) {
+            const tmp = createCanvas(workingSize, workingSize); const tctx = tmp.getContext('2d');
+            (tctx as any).imageSmoothingEnabled = false;
+            tctx.drawImage(image, overlayFrame.x, overlayFrame.y, overlayFrame.w, overlayFrame.h, 0, 0, workingSize, workingSize);
+            const img2 = tctx.getImageData(0, 0, workingSize, workingSize);
+            if (entry.SecondaryColor) tintImageData(img2, entry.SecondaryColor);
+            tctx.putImageData(img2, 0, 0);
+            wctx.globalAlpha = 1;
+            wctx.drawImage(tmp, 0, 0);
+        }
+
+        if (entry.Rings && entry.Rings.Type) {
+            const ringFrameName = `${String(entry.Rings.Type).toLowerCase()}ring`;
+            const ringFrame = atlas.frames[ringFrameName]?.frame;
+            if (ringFrame) {
+                wctx.drawImage(
+                    image,
+                    ringFrame.x,
+                    ringFrame.y,
+                    ringFrame.w,
+                    ringFrame.h,
+                    0,
+                    0,
+                    workingSize,
+                    workingSize
+                );
+            }
+        }
+
+        const outCanvas = createCanvas(finalSize, finalSize);
+        const octx = outCanvas.getContext('2d');
+        (octx as any).imageSmoothingEnabled = false;
+        octx.clearRect(0, 0, finalSize, finalSize);
+        octx.drawImage(workCanvas, 0, 0, finalSize, finalSize);
+
+        if (entry.Atmosphere) {
+            const grad = octx.createRadialGradient(finalSize / 2, finalSize / 2, finalSize * 0.55, finalSize / 2, finalSize / 2, finalSize * 0.85);
+            grad.addColorStop(0, 'rgba(255,255,255,0)');
+            grad.addColorStop(1, 'rgba(255,255,255,0.4)');
+            octx.fillStyle = grad;
+            octx.beginPath(); octx.arc(finalSize / 2, finalSize / 2, finalSize / 2 - 2, 0, Math.PI * 2); octx.fill();
+        }
+
+        return outCanvas.toBuffer('image/png');
     }
 
-    const FINAL = 96;
-    const outCanvas = createCanvas(FINAL, FINAL);
-    const octx = outCanvas.getContext('2d');
-    (octx as any).imageSmoothingEnabled = false;
-    octx.clearRect(0, 0, FINAL, FINAL);
-    octx.drawImage(workCanvas, 0, 0, FINAL, FINAL);
+    if (entry.Type === 'Star' || entry.Type === 'BlackHole' || entry.Type === 'AsteroidField') {
+        const frameKey = String(entry.SubType || entry.Type).toLowerCase();
+        const frame = atlas.frames[frameKey]?.frame;
+        const workingSize = frame ? Math.max(frame.w, frame.h) : finalSize;
+        const workCanvas = createCanvas(workingSize, workingSize);
+        const wctx = workCanvas.getContext('2d');
+        (wctx as any).imageSmoothingEnabled = false;
+        wctx.clearRect(0, 0, workingSize, workingSize);
 
-    if (entry.Atmosphere) {
-        const grad = octx.createRadialGradient(FINAL / 2, FINAL / 2, FINAL * 0.55, FINAL / 2, FINAL / 2, FINAL * 0.85);
-        grad.addColorStop(0, 'rgba(255,255,255,0)');
-        grad.addColorStop(1, 'rgba(255,255,255,0.4)');
-        octx.fillStyle = grad;
-        octx.beginPath(); octx.arc(FINAL / 2, FINAL / 2, FINAL / 2 - 2, 0, Math.PI * 2); octx.fill();
+        if (frame) {
+            wctx.drawImage(
+                image,
+                frame.x,
+                frame.y,
+                frame.w,
+                frame.h,
+                0,
+                0,
+                workingSize,
+                workingSize
+            );
+        } else {
+            let color: [number, number, number] = Array.isArray(entry.PrimaryColor)
+                ? entry.PrimaryColor
+                : Array.isArray(entry.Primary)
+                    ? entry.Primary
+                    : [255, 255, 255];
+            const starType = string_to_star_type(entry.SubType || entry.Type);
+            if (starType !== null) {
+                const c = star_type_to_star_color(starType);
+                color = [c.r, c.g, c.b];
+            }
+            const radius = workingSize / 2 - Math.max(1, workingSize * 0.08);
+            wctx.fillStyle = `rgb(${color[0]},${color[1]},${color[2]})`;
+            wctx.beginPath();
+            wctx.arc(workingSize / 2, workingSize / 2, radius, 0, Math.PI * 2);
+            wctx.fill();
+        }
+
+        const outCanvas = createCanvas(finalSize, finalSize);
+        const octx = outCanvas.getContext('2d');
+        (octx as any).imageSmoothingEnabled = false;
+        octx.clearRect(0, 0, finalSize, finalSize);
+        octx.drawImage(workCanvas, 0, 0, finalSize, finalSize);
+        return outCanvas.toBuffer('image/png');
     }
 
-
-    return outCanvas.toBuffer('image/png');
+    return null;
 }
 
 export async function getUniverseEntry(coordStr: string) {
