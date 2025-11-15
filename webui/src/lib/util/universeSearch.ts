@@ -54,6 +54,7 @@ export function searchUniverse(universe: UniverseData, opts: SearchOptions): Sea
 
 	const activeTriKeys = Object.keys(resourcesTri).filter((k) => resourcesTri[Number(k)] !== 'any');
 	const anyTriResources = activeTriKeys.length > 0;
+	const activeTriKeysNum = activeTriKeys.map(k => Number(k));
 	
 	const nothingSelected =
 		name === '' &&
@@ -77,9 +78,9 @@ export function searchUniverse(universe: UniverseData, opts: SearchOptions): Sea
 	if (nothingSelected) return null;
 
 	const targetColor = color !== '' && colorSimilarity > 0 ? hexToRgb(color) : null;
-	const colorTolerance = targetColor ? Math.max(1, (colorSimilarity / 100) * 255) : 0;
+	const colorToleranceSq = targetColor ? Math.pow(Math.max(1, (colorSimilarity / 100) * 255), 2) : 0;
 	const targetSecondaryColor = secondaryColor !== '' && secondaryColorSimilarity > 0 ? hexToRgb(secondaryColor) : null;
-	const secondaryColorTolerance = targetSecondaryColor ? Math.max(1, (secondaryColorSimilarity / 100) * 255) : 0;
+	const secondaryColorToleranceSq = targetSecondaryColor ? Math.pow(Math.max(1, (secondaryColorSimilarity / 100) * 255), 2) : 0;
 
 	const hasNameFilter = name !== '';
 	const hasRanmatFilter = ranmat !== '';
@@ -89,6 +90,8 @@ export function searchUniverse(universe: UniverseData, opts: SearchOptions): Sea
 	const hasStarTypeFilter = Object.values(starTypeFilters).some((v) => v !== 0);
 	const hasColorFilter = targetColor !== null;
 	const hasSecondaryColorFilter = targetSecondaryColor !== null;
+	const hasPlanetTypeIncludes = hasPlanetTypeFilter && Object.values(planetTypeFilters).some((v) => v === 1);
+	const hasStarTypeIncludes = hasStarTypeFilter && Object.values(starTypeFilters).some((v) => v === 1);
 
 	const resourcesMap = new Map<Resource, number>();
 	for (const res of resources) {
@@ -97,6 +100,9 @@ export function searchUniverse(universe: UniverseData, opts: SearchOptions): Sea
 
 	const filtered_systems = [];
 	const universeMap = new Map<string, Planet | Star>();
+	const allMatchingPlanets: Planet[] = [];
+	const globalColorDistMap = hasColorFilter ? new Map<Planet, number>() : null;
+	const globalSecondaryColorDistMap = hasSecondaryColorFilter ? new Map<Planet, number>() : null;
 
 	for (const system of universe.solar_systems) {
 		if (earthlikesInSystem !== 'any') {
@@ -106,28 +112,44 @@ export function searchUniverse(universe: UniverseData, opts: SearchOptions): Sea
 		}
 
 		if (hasStarTypeFilter) {
-			const hasMatchingStar = system.stars.some(star => {
+			let hasExcludedStar = false;
+			let hasMatchingStar = false;
+			
+			for (const star of system.stars) {
 				const starState = starTypeFilters[star.type] ?? 0;
-				return starState === 1;
-			});
-			const hasExcludedStar = system.stars.some(star => {
-				const starState = starTypeFilters[star.type] ?? 0;
-				return starState === -1;
-			});
+				if (starState === -1) {
+					hasExcludedStar = true;
+					break;
+				}
+				if (starState === 1) {
+					hasMatchingStar = true;
+				}
+			}
+			
 			if (hasExcludedStar) continue;
-			if (Object.values(starTypeFilters).some((v) => v === 1) && !hasMatchingStar) continue;
+			if (hasStarTypeIncludes && !hasMatchingStar) continue;
 		}
 
 		const matchingPlanets = [];
-		const colorDistMap = hasColorFilter ? new Map<Planet, number>() : null;
-		const secondaryColorDistMap = hasSecondaryColorFilter ? new Map<Planet, number>() : null;
 
-		for (const planet of system.planets) {
+		planetLoop: for (const planet of system.planets) {
 			if (hasPlanetTypeFilter) {
 				const typeState = planetTypeFilters[planet.type] ?? 0;
 				if (typeState === -1) continue;
-				if (typeState === 0 && Object.values(planetTypeFilters).some((v) => v === 1)) continue;
+				if (typeState === 0 && hasPlanetTypeIncludes) continue;
 			}
+
+			if (rings === 'has' && !planet.ring) continue;
+			if (rings === 'no' && planet.ring) continue;
+
+			if (atmosphere === 'yes' && !planet.atmosphere) continue;
+			if (atmosphere === 'no' && planet.atmosphere) continue;
+
+			if (tidallyLocked === 'yes' && planet.daycycle_increment !== 0) continue;
+			if (tidallyLocked === 'no' && planet.daycycle_increment === 0) continue;
+
+			if (planet.temperature < temperatureRange[0] || planet.temperature > temperatureRange[1]) continue;
+			if (planet.gravity < gravityRange[0] || planet.gravity > gravityRange[1]) continue;
 
 			if (hasNameFilter) {
 				const planetName = planet.name.toLowerCase();
@@ -172,35 +194,15 @@ export function searchUniverse(universe: UniverseData, opts: SearchOptions): Sea
 				if (!planetHasResources(planet.resources, resourcesMap)) continue;
 			}
 
-			if (rings === 'has' && !planet.ring) continue;
-			if (rings === 'no' && planet.ring) continue;
-
-			if (atmosphere === 'yes' && !planet.atmosphere) continue;
-			if (atmosphere === 'no' && planet.atmosphere) continue;
-
-			if (tidallyLocked === 'yes' && planet.daycycle_increment !== 0) continue;
-			if (tidallyLocked === 'no' && planet.daycycle_increment === 0) continue;
-
-			if (planet.temperature < temperatureRange[0] || planet.temperature > temperatureRange[1]) continue;
-			if (planet.gravity < gravityRange[0] || planet.gravity > gravityRange[1]) continue;
-
 			if (anyTriResources) {
-				let triResourcesMatch = true;
-				for (const key of activeTriKeys) {
-					const r = Number(key);
+				for (const r of activeTriKeysNum) {
 					const want = resourcesTri[r];
 					const hit = planet.resources.find(pr => pr.resource === r);
 					const amount = hit?.amount ?? 0;
-					if (want === 'yes' && amount <= 0) {
-						triResourcesMatch = false;
-						break;
-					}
-					if (want === 'no' && amount > 0) {
-						triResourcesMatch = false;
-						break;
+					if ((want === 'yes' && amount <= 0) || (want === 'no' && amount > 0)) {
+						continue planetLoop;
 					}
 				}
-				if (!triResourcesMatch) continue;
 			}
 
 			if (hasColorFilter) {
@@ -208,63 +210,71 @@ export function searchUniverse(universe: UniverseData, opts: SearchOptions): Sea
 				const dr = pcol.r - targetColor.r;
 				const dg = pcol.g - targetColor.g;
 				const db = pcol.b - targetColor.b;
-				const dist = Math.sqrt(dr*dr + dg*dg + db*db);
-				colorDistMap!.set(planet, dist);
+				const distSq = dr*dr + dg*dg + db*db;
+				if (colorToleranceSq > 0 && distSq > colorToleranceSq) continue;
+				globalColorDistMap!.set(planet, distSq);
 			}
 			if (hasSecondaryColorFilter) {
 				const scol = planet.secondary_color;
 				const dr = scol.r - targetSecondaryColor.r;
 				const dg = scol.g - targetSecondaryColor.g;
 				const db = scol.b - targetSecondaryColor.b;
-				const dist = Math.sqrt(dr*dr + dg*dg + db*db);
-				secondaryColorDistMap!.set(planet, dist);
+				const distSq = dr*dr + dg*dg + db*db;
+				if (secondaryColorToleranceSq > 0 && distSq > secondaryColorToleranceSq) continue;
+				globalSecondaryColorDistMap!.set(planet, distSq);
 			}
 
 			matchingPlanets.push(planet);
+			allMatchingPlanets.push(planet);
 		}
 
 		if (matchingPlanets.length > 0) {
-			let finalPlanets = matchingPlanets;
-
-			if (hasColorFilter) {
-				finalPlanets = finalPlanets
-					.map(p => ({ p, d: colorDistMap!.get(p)! }))
-					.sort((a, b) => a.d - b.d)
-					.map(x => x.p);
-				if (colorTolerance > 0) {
-					finalPlanets = finalPlanets.filter(p => colorDistMap!.get(p)! <= colorTolerance);
-				}
-				if (finalPlanets.length === 0) continue;
-			}
-			if (hasSecondaryColorFilter) {
-				finalPlanets = finalPlanets
-					.map(p => ({ p, d: secondaryColorDistMap!.get(p)! }))
-					.sort((a, b) => a.d - b.d)
-					.map(x => x.p);
-				if (secondaryColorTolerance > 0) {
-					finalPlanets = finalPlanets.filter(p => secondaryColorDistMap!.get(p)! <= secondaryColorTolerance);
-				}
-				if (finalPlanets.length === 0) continue;
-			}
-
-			for (const planet of finalPlanets) {
-				universeMap.set(coordToString(planet.coordinate), planet);
-			}
 			for (const star of system.stars) {
 				universeMap.set(coordToString(star.coordinate), star);
 			}
 
 			const systemResources: PlanetResource[] = [];
-			for (const planet of finalPlanets) {
+			for (const planet of matchingPlanets) {
 				systemResources.push(...planet.resources);
 			}
 
 			filtered_systems.push({
-				planets: finalPlanets,
+				planets: matchingPlanets,
 				stars: system.stars,
 				resources: systemResources
 			});
 		}
+	}
+
+	if (hasColorFilter || hasSecondaryColorFilter) {
+		allMatchingPlanets.sort((a, b) => {
+			const aDist = (globalColorDistMap?.get(a) ?? 0) + (globalSecondaryColorDistMap?.get(a) ?? 0);
+			const bDist = (globalColorDistMap?.get(b) ?? 0) + (globalSecondaryColorDistMap?.get(b) ?? 0);
+			return aDist - bDist;
+		});
+
+		const planetToSortIndex = new Map<Planet, number>();
+		allMatchingPlanets.forEach((planet, index) => {
+			planetToSortIndex.set(planet, index);
+		});
+
+		for (const system of filtered_systems) {
+			system.planets.sort((a, b) => {
+				const aIndex = planetToSortIndex.get(a) ?? 0;
+				const bIndex = planetToSortIndex.get(b) ?? 0;
+				return aIndex - bIndex;
+			});
+		}
+
+		filtered_systems.sort((a, b) => {
+			const aBestIndex = Math.min(...a.planets.map(p => planetToSortIndex.get(p) ?? Infinity));
+			const bBestIndex = Math.min(...b.planets.map(p => planetToSortIndex.get(p) ?? Infinity));
+			return aBestIndex - bBestIndex;
+		});
+	}
+
+	for (const planet of allMatchingPlanets) {
+		universeMap.set(coordToString(planet.coordinate), planet);
 	}
 
 	return {
