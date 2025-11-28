@@ -129,6 +129,69 @@
 
 	let search_results: SearchResult | null = null;
 
+	let bottomBannerText = 'Welcome to the Gab\'s Starmap. I will not be rejoining Eggs D Studios unless Mawesome decides to ban 12pink and issue an apology to the community. Mawesome is ruining his credibility (which there was barely any to begin with) by unbanning 12pink (who is a really weird individual) and refusing to listen to any of the proof against 12pink. I will not support a developer that allows people like 12pink to get unbanned. By the same logic, people like nyx, 50keys, atlas, tci, etc should be unbanned, which is clearly incorrect. https://discord.gg/gdpExmMyDf for a better server. 12pink should also hold accountability for her actions instead of arguing she was immature at that age (a 17 year old is not immature and shouldnt be dating a 14 year old).';
+
+	let marqueeContentEl: HTMLDivElement | null = null;
+	let marqueeTrackEl: HTMLDivElement | null = null;
+	let marqueeRepeatCount = 2;
+	let marqueeUpdateQueued = false;
+
+	if (typeof window !== 'undefined') {
+		(window as any).setBottomBannerText = (s: string) => {
+			bottomBannerText = s ?? '';
+			queueMarqueeDurationUpdate();
+		};
+	}
+
+	async function updateMarqueeDuration() {
+		if (!marqueeContentEl) return;
+		const trackWidth = marqueeTrackEl?.clientWidth ?? window.innerWidth;
+		const firstItem = marqueeContentEl.querySelector('.marquee-item') as HTMLSpanElement | null;
+		const itemWidth = firstItem?.scrollWidth ?? 0;
+
+		if (trackWidth > 0 && itemWidth > 0) {
+			const neededRepeats = Math.max(2, Math.ceil((trackWidth * 2) / itemWidth));
+			if (neededRepeats !== marqueeRepeatCount) {
+				marqueeRepeatCount = neededRepeats;
+				await tick();
+			}
+		}
+
+		const distance = marqueeContentEl.scrollWidth / 2;
+		if (distance <= 0) return;
+		const speed = 200; // pixels per second
+		const duration = Math.max(3, distance / speed);
+		marqueeContentEl.style.setProperty('--marquee-duration', `${duration}s`);
+	}
+
+	async function queueMarqueeDurationUpdate() {
+		if (marqueeUpdateQueued) return;
+		marqueeUpdateQueued = true;
+		await tick();
+		try {
+			await updateMarqueeDuration();
+		} catch (err) {
+			console.error('Failed to update marquee duration', err);
+		} finally {
+			marqueeUpdateQueued = false;
+		}
+	}
+
+	let ro: ResizeObserver | null = null;
+	onMount(() => {
+		queueMarqueeDurationUpdate();
+		ro = new ResizeObserver(() => queueMarqueeDurationUpdate());
+		if (marqueeContentEl) ro.observe(marqueeContentEl);
+		if (marqueeTrackEl) ro.observe(marqueeTrackEl);
+		window.addEventListener('resize', queueMarqueeDurationUpdate);
+	});
+	onDestroy(() => {
+		if (ro) ro.disconnect();
+		window.removeEventListener('resize', queueMarqueeDurationUpdate);
+	});
+	$: if (marqueeContentEl && marqueeTrackEl) queueMarqueeDurationUpdate();
+	$: if (bottomBannerText !== undefined) queueMarqueeDurationUpdate();
+
 	function key({ x, y, z, w }: { x: number; y: number; z: number; w: number }) {
 		return `${x}, ${y}, ${z}, ${w}`;
 	}
@@ -268,6 +331,16 @@
 	}}
 />
 
+<div class="bottom-banner" aria-hidden={bottomBannerText === ''} bind:this={marqueeTrackEl}>
+	<div class="marquee-track">
+		<div class="marquee-content" bind:this={marqueeContentEl} style="--marquee-duration: 18s;">
+			{#each Array.from({ length: marqueeRepeatCount }) as _, idx (idx)}
+				<span class="marquee-item">{bottomBannerText}&nbsp;&nbsp;&nbsp;</span>
+			{/each}
+		</div>
+	</div>
+</div>
+
 <style>
 	.overlay {
 		position: fixed;
@@ -286,5 +359,42 @@
 		to {
 			transform: rotate(360deg);
 		}
+	}
+
+	.bottom-banner {
+		position: fixed;
+		left: 0;
+		bottom: 0;
+		width: 100%;
+		height: 36px;
+		pointer-events: none;
+		z-index: 900;
+		display: flex;
+		align-items: center;
+		background: linear-gradient(to right, rgba(0,0,0,0.45), rgba(0,0,0,0.18));
+	}
+	.marquee-track {
+		overflow: hidden;
+		width: 100%;
+		height: 100%;
+		display: flex;
+		align-items: center;
+	}
+	.marquee-content {
+		display: inline-flex;
+		white-space: nowrap;
+		will-change: transform;
+		animation: marquee-scroll var(--marquee-duration, 18s) linear infinite;
+	}
+	.marquee-item {
+		display: inline-block;
+		color: #ddd;
+		font: 13px/14px system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+		padding-right: 2rem;
+	}
+
+	@keyframes marquee-scroll {
+		from { transform: translateX(0%); }
+		to { transform: translateX(-50%); }
 	}
 </style>
