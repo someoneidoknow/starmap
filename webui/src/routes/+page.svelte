@@ -144,6 +144,7 @@
 	}
 
 	async function updateMarqueeDuration() {
+		if (typeof window === 'undefined') return;
 		if (!marqueeContentEl) return;
 		const trackWidth = marqueeTrackEl?.clientWidth ?? window.innerWidth;
 		const firstItem = marqueeContentEl.querySelector('.marquee-item') as HTMLSpanElement | null;
@@ -165,6 +166,7 @@
 	}
 
 	async function queueMarqueeDurationUpdate() {
+		if (typeof window === 'undefined') return;
 		if (marqueeUpdateQueued) return;
 		marqueeUpdateQueued = true;
 		await tick();
@@ -187,7 +189,9 @@
 	});
 	onDestroy(() => {
 		if (ro) ro.disconnect();
-		window.removeEventListener('resize', queueMarqueeDurationUpdate);
+		if (typeof window !== 'undefined') {
+			window.removeEventListener('resize', queueMarqueeDurationUpdate);
+		}
 	});
 	$: if (marqueeContentEl && marqueeTrackEl) queueMarqueeDurationUpdate();
 	$: if (bottomBannerText !== undefined) queueMarqueeDurationUpdate();
