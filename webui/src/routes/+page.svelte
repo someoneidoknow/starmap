@@ -160,7 +160,7 @@
 
 		const distance = marqueeContentEl.scrollWidth / 2;
 		if (distance <= 0) return;
-		const speed = 200; // pixels per second
+		const speed = 150; // pixels per second
 		const duration = Math.max(3, distance / speed);
 		marqueeContentEl.style.setProperty('--marquee-duration', `${duration}s`);
 	}
