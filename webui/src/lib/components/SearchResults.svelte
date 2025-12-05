@@ -181,6 +181,27 @@
 		linkCopiedSet = new Set(linkCopiedSet);
 		setTimeout(() => { linkCopiedSet.delete(coordText); linkCopiedSet = new Set(linkCopiedSet); }, 1200);
 	}
+
+    function downloadFile(data: string) {
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'data.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(blob);
+    }
+
+    function downloadData() {
+        if (!stars) {
+            const json = JSON.stringify(planets());
+        } else {
+            const json = JSON.stringify(stars());
+        }
+        downloadFile(json);
+    }
 </script>
 
 <Window bind:left bind:top bind:width bind:height collapsible={true} minWidth={480} maxWidth={900}>
@@ -189,6 +210,7 @@
 	<div class="toolbar">
 		<button class:selected={!showStars} on:click={() => (showStars = false)}>Planets</button>
 		<button class:selected={showStars} on:click={() => (showStars = true)}>Stars</button>
+        <button on:click={() => downloadData()}>Export Data</button>
 	</div>
 
 	<div class="counts">
