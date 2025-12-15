@@ -195,10 +195,11 @@
     }
 
     function downloadData() {
+		let json;
         if (!stars) {
-            const json = JSON.stringify(planets());
+            json = JSON.stringify(planets());
         } else {
-            const json = JSON.stringify(stars());
+            json = JSON.stringify(stars());
         }
         downloadFile(json);
     }
